@@ -33,7 +33,7 @@ def main():
     # Get the list of all files in directory tree at given path
     listOfFiles = getListOfFiles(dirName)
 
-    row = ['Filename', 'Integers', 'Floating', 'Control', 'Cycles', 'Time Average']
+    row = ['Filename', 'Integers', 'Floating', 'Control', 'Cycles', 'Time Average', 'Memory', 'Logic', 'Branches']
     config_files = ['processed_config_4_100.csv', 'processed_config_4_80.csv', 'processed_config_4_60.csv',
                     'processed_config_4_40.csv', 'processed_config_8_100.csv', 'processed_config_8_80.csv',
                     'processed_config_8_60.csv', 'processed_config_8_40.csv']
@@ -100,11 +100,17 @@ def process_file(file, processing_file):
     cntrl = np.array([])
     cycles = np.array([])
     time_data = np.array([])
+    memory = np.array([])
+    logic = np.array([])
+    branches = np.array([])
     integers_sum = 0
     floating_sum = 0
     cntrl_sum = 0
     cycles_sum = 0
     time_avg = 0
+    memory_sum = 0
+    logic_sum = 0
+    branches_sum = 0
     timeSeries = False
     for line in file:
         if timeSeries and "BlockSize = " in line:
@@ -124,6 +130,13 @@ def process_file(file, processing_file):
             if "Cycles = " in line:
                 if re.search('^Cycles = ', line):
                     cycles = np.append(cycles, int(line.split("= ")[-1].strip()))
+            if "Commit.Memory" in line:
+                memory = np.append(memory, int(line.split("= ")[-1].strip()))
+            if "Commit.Logic" in line:
+                logic = np.append(logic, int(line.split("= ")[-1].strip()))
+            if "Commit.Branches" in line:
+                branches = np.append(branches, int(line.split("= ")[-1].strip()))
+
     if integers.size != 0:
         integers_sum = int(np.sum(integers))
     if floating.size > 0:
@@ -134,7 +147,13 @@ def process_file(file, processing_file):
         cycles_sum = int(np.sum(cycles))
     if time_data.size > 0:
         time_avg = int(np.average(time_data))
-    row = [file.name.strip(), integers_sum, floating_sum, cntrl_sum, cycles_sum, time_avg]
+    if memory.size > 0:
+        memory_sum = int(np.sum(memory))
+    if logic.size > 0:
+        logic_sum = int(np.sum(logic))
+    if branches.size > 0:
+        branches_sum = int(np.sum(branches))
+    row = [file.name.strip(), integers_sum, floating_sum, cntrl_sum, cycles_sum, time_avg, memory_sum, logic_sum, branches_sum]
     with open(processing_file, "a", newline='') as processed_file:
         writer = csv.writer(processed_file)
         writer.writerow(row)
