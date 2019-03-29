@@ -33,10 +33,11 @@ def main():
     # Get the list of all files in directory tree at given path
     listOfFiles = getListOfFiles(dirName)
 
-    row = ['Filename', 'Integers', 'Floating', 'Control', 'Cycles', 'Time Average', 'Memory', 'Logic', 'Branches']
-    config_files = ['processed_config_4_100.csv', 'processed_config_4_80.csv', 'processed_config_4_60.csv',
-                    'processed_config_4_40.csv', 'processed_config_8_100.csv', 'processed_config_8_80.csv',
-                    'processed_config_8_60.csv', 'processed_config_8_40.csv']
+    row = ['Filename', 'Normalized integer', 'Normalized floating', 'Normalized control', 'Cycles', 'Normalized time avg',
+           'Ratio Memory', 'Ratio branches', 'Ratio call', 'Phase']
+    config_files = ['processed_config_4_40.csv', 'processed_config_4_60.csv', 'processed_config_4_80.csv',
+                    'processed_config_4_100.csv', 'processed_config_8_40.csv', 'processed_config_8_60.csv',
+                    'processed_config_8_80.csv', 'processed_config_8_100.csv']
 
     exists = False
     for config in config_files:
@@ -70,14 +71,17 @@ def main():
                 process_file(file, 'processed_config_8_40.csv')
             file.close()
 
+    write_best_config(config_files)
+
+
+def write_best_config(config_files):
     df = pd.read_csv(config_files[0])
     number_of_rows = df.get('Cycles').count()
-    data = np.zeros([8, number_of_rows],dtype=np.int)
-    for config, j in zip(config_files,range(8)):
+    data = np.zeros([8, number_of_rows], dtype=np.int)
+    for config, j in zip(config_files, range(8)):
         df = pd.read_csv(config)
         for i in range(number_of_rows):
             data[j:j + 1, i:i + 1] = df.get('Cycles')[i]
-
     config_exists = os.path.isfile('best_config_file.csv')
     if not config_exists:
         with open("best_config_file.csv", "w", newline="") as best_config:
@@ -86,8 +90,10 @@ def main():
         best_config.close()
 
         for i in range(number_of_rows):
-            cycles_arr = np.array([data[0:1, i:i+1][0][0], data[1:2, i:i+1][0][0], data[2:3, i:i+1][0][0], data[3:4, i:i+1][0][0],
-                                   data[4:5, i:i + 1][0][0], data[5:6, i:i+1][0][0], data[6:7, i:i+1][0][0], data[7:8, i:i+1][0][0]])
+            cycles_arr = np.array(
+                [data[0:1, i:i + 1][0][0], data[1:2, i:i + 1][0][0], data[2:3, i:i + 1][0][0], data[3:4, i:i + 1][0][0],
+                 data[4:5, i:i + 1][0][0], data[5:6, i:i + 1][0][0], data[6:7, i:i + 1][0][0],
+                 data[7:8, i:i + 1][0][0]])
             with open("best_config_file.csv", "a", newline="") as best_config:
                 writer = csv.writer(best_config)
                 writer.writerow([np.where(cycles_arr == max(cycles_arr))[0][0]])
@@ -103,6 +109,8 @@ def process_file(file, processing_file):
     memory = np.array([])
     logic = np.array([])
     branches = np.array([])
+    jump = np.array([])
+    call = np.array([])
     integers_sum = 0
     floating_sum = 0
     cntrl_sum = 0
@@ -111,6 +119,15 @@ def process_file(file, processing_file):
     memory_sum = 0
     logic_sum = 0
     branches_sum = 0
+    jump_sum = 0
+    call_sum = 0
+    feature1 = 0
+    feature2 = 0
+    feature3 = 0
+    feature4 = 0
+    feature5 = 0
+    feature6 = 0
+    feature7 = 0
     timeSeries = False
     for line in file:
         if timeSeries and "BlockSize = " in line:
@@ -136,6 +153,10 @@ def process_file(file, processing_file):
                 logic = np.append(logic, int(line.split("= ")[-1].strip()))
             if "Commit.Branches" in line:
                 branches = np.append(branches, int(line.split("= ")[-1].strip()))
+            if "Commit.Uop.jump" in line:
+                jump = np.append(jump, int(line.split("= ")[-1].strip()))
+            if ("Commit.Uop.call" in line) or ("Commit.Uop.syscall" in line):
+                call = np.append(call, int(line.split("= ")[-1].strip()))
 
     if integers.size != 0:
         integers_sum = int(np.sum(integers))
@@ -153,7 +174,20 @@ def process_file(file, processing_file):
         logic_sum = int(np.sum(logic))
     if branches.size > 0:
         branches_sum = int(np.sum(branches))
-    row = [file.name.strip(), integers_sum, floating_sum, cntrl_sum, cycles_sum, time_avg, memory_sum, logic_sum, branches_sum]
+    if jump.size > 0:
+        jump_sum = int(np.sum(jump))
+    if call.size > 0:
+        call_sum = int(np.sum(call))
+    feature1 = integers_sum/500000
+    feature2 = floating_sum/500000
+    feature3 = cntrl_sum/500000
+    feature4 = time_avg / 4096
+    phase = file.name.split("\\")[-1].split("-")[-2]
+    if integers_sum > 0:
+        feature5 = memory_sum / (integers_sum + floating_sum + cntrl_sum + logic_sum)
+        feature6 = (branches_sum - jump_sum)/jump_sum
+        feature7 = call_sum / cntrl_sum
+    row = [file.name.strip(), feature1, feature2, feature3, cycles_sum, feature4, feature5, feature6, feature7, phase]
     with open(processing_file, "a", newline='') as processed_file:
         writer = csv.writer(processed_file)
         writer.writerow(row)

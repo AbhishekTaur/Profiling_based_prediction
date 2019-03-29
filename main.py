@@ -8,7 +8,7 @@ import torch.nn as nn
 lr = 0.1
 seq_length = 20
 data_time_steps = np.linspace(2, 100, seq_length + 1)
-data = (np.sin(data_time_steps) * 2 + 1).astype(int)
+data = (np.sin(data_time_steps) * 5 + 5).astype(int)
 data.resize((seq_length + 1, 1))
 
 
@@ -52,7 +52,7 @@ def train(X, y, model):
 
 def main():
     dtype = torch.FloatTensor
-    input_size, hidden_size, output_size = 7, 6, 3
+    input_size, hidden_size, output_size = 7, 6, 10
     model = RNN_model(input_size, hidden_size, output_size, dtype)
     X, y = get_data(dtype)
     labels = np.array([1, 2, 3, 4, 5])
