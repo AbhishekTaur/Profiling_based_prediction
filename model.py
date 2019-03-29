@@ -20,8 +20,19 @@ class RNN_model(nn.Module):
         self.w2 = Variable(self.w2, requires_grad=True)
 
     def forward(self, input, context_state, w1, w2):
-        xh = torch.cat((input, context_state), 1)
+        i = Variable(torch.Tensor([[7, 8, 9]]).type(torch.FloatTensor))
+        j = Variable(torch.Tensor([[0, 0]]).type(torch.FloatTensor))
+        print(i.shape)
+        print(j.shape)
+        xh_dummy = torch.cat((i, j), 1)
+        xh = torch.cat((input, context_state))
+        print(xh.shape)
+        print(w1.shape)
+        xh = xh.t()
+        print(xh.shape)
         context_state = torch.tanh(xh.mm(w1))
+        print(context_state.shape)
+        print(w2.shape)
         out = context_state.mm(w2)
         return out, context_state
 
