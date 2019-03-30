@@ -43,7 +43,7 @@ def train(X, y, model):
 
     for i in range(epochs):
         total_loss = 0
-        context_state = Variable(torch.zeros((model.hidden_size, 8)).type(model.dtype), requires_grad=True)
+        context_state = Variable(torch.zeros((1, model.hidden_size)).type(model.dtype), requires_grad=True)
 
         for j in range(X.size(0)):
             input = X[j:(j + 1)]
@@ -73,7 +73,7 @@ def train(X, y, model):
 
 def main():
     dtype = torch.FloatTensor
-    input_size, hidden_size, output_size = 7, 6, 10
+    input_size, hidden_size, output_size = 7, 6, 8
     model = RNN_model(input_size, hidden_size, output_size, dtype)
     X, y = get_data(dtype)
     labels = np.array([1, 2, 3, 4, 5])

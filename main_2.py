@@ -62,7 +62,6 @@ def train_RNN(model, label, input):
 
 def train(model, label, input):
     label = label.long()
-    print(type(label))
     batch_size = 1108
     learning_rate = 0.0001
     predictions = []
@@ -91,12 +90,12 @@ def main():
     model = MLP(input_size, hidden_size, output_size)
     X, y = get_data()
     epochs = 500
-    print(y.size())
-    for i in range(epochs):
-        output_i, loss = train(model, y, X)
-        print("epoch {}".format(i))
-        print("accuracy = ", np.sum(output_i == y.numpy())/y.size())
-        print("loss: {}".format(loss))
+    # print(y.size())
+    # for i in range(epochs):
+    #     output_i, loss = train(model, y, X)
+    #     print("epoch {}".format(i))
+    #     print("accuracy = ", np.sum(output_i == y.numpy())/y.size())
+    #     print("loss: {}".format(loss))
 
 
     model = RNN(input_size, hidden_size, output_size)
