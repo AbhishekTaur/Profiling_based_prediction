@@ -21,6 +21,8 @@ def getListOfFiles(dirName, subset, train):
     allFiles = list()
     # Iterate over all the entries
     for entry in listOfFile:
+        if entry == 'canneal':
+            print(entry)
         if dirName == '../data' and train and program_dict[entry] not in subset:
             continue
         if dirName == '../data' and not train and program_dict[entry] in subset:
@@ -55,6 +57,7 @@ def merge_data(processed_file, merged_file):
 
 def main():
     dirName = '../data'
+    print("Starting the program")
 
     # Get the list of all files in directory tree at given path
 
@@ -67,6 +70,10 @@ def main():
     if not os.path.exists(train_data_folder):
         os.mkdir(test_data_folder)
         os.mkdir(train_data_folder)
+        print("Created directories: {}".format(train_data_folder))
+        print("Created directories: {}".format(test_data_folder))
+
+
     row = ['Filename', 'Normalized integer', 'Normalized floating', 'Normalized control', 'Cycles',
            'Normalized time avg',
            'Ratio Memory', 'Ratio branches', 'Ratio call', 'Phase']
