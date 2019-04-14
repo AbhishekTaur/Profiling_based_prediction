@@ -1,9 +1,11 @@
 import torch
 import numpy as np
-from model import MLP, RNN
+from model import MLP
 import torch.nn as nn
 import pandas as pd
 import matplotlib.pyplot as plt
+import os
+import re
 
 lr = 0.1
 seq_length = 20
@@ -14,24 +16,50 @@ data.resize((seq_length + 1, 1))
 features = ['Normalized integer', 'Normalized floating', 'Normalized control', 'Normalized time avg',
             'Ratio Memory', 'Ratio branches', 'Ratio call', 'Phase']
 
-config_files = ['merged_config_4_40.csv', 'merged_config_4_60.csv', 'merged_config_4_80.csv',
-                'merged_config_4_100.csv', 'merged_config_8_40.csv', 'merged_config_8_60.csv',
-                'merged_config_8_80.csv', 'merged_config_8_100.csv']
+# config_files = ['merged_config_{}_4_40.csv'.format('train'),
+#                 'merged_config_{}_4_60.csv'.format('train'),
+#                 'merged_config_{}_4_80.csv'.format('train'),
+#                 'merged_config_{}_4_100.csv'.format('train'),
+#                 'merged_config_{}_8_40.csv'.format('train'),
+#                 'merged_config_{}_8_60.csv'.format('train'),
+#                 'merged_config_{}_8_80.csv'.format('train'),
+#                 'merged_config_{}_8_100.csv'.format('train')]
+
+
+def getConfigFilesList(dirName, inside, run_number, train_dict):
+
+    listOfFile = os.listdir(dirName)
+    for entry in listOfFile:
+
+        if re.search('^train_\d{1,4}$', entry):
+            inside = True
+            run_number = int(entry.split("_")[1])
+            if not run_number in train_dict.keys():
+                train_dict[run_number] = []
+            elif len(train_dict[run_number]) == 8:
+                inside = False
+
+        if inside:
+            fullPath = os.path.join(dirName, entry)
+            if os.path.isdir(fullPath):
+                getConfigFilesList(fullPath, inside, run_number, train_dict)
+            elif 'merged_' in fullPath:
+                train_dict[run_number].append(fullPath)
 
 # config_files = ['processed_config_4_40.csv', 'processed_config_4_60.csv', 'processed_config_4_80.csv',
 #                 'processed_config_4_100.csv', 'processed_config_8_40.csv', 'processed_config_8_60.csv',
 #                 'processed_config_8_80.csv', 'processed_config_8_100.csv']
 
 
-def get_data():
+def get_data(config_files):
     data_X = []
     data_Y = pd.read_csv('best_config_file.csv')
     for config, j in zip(config_files, range(len(config_files))):
         df = pd.read_csv(config, usecols=features).values
         data_X.append(df)
     data_X = np.hstack(tuple(data_X))
-    print(data_X.shape)
-    print(data_Y.shape)
+    # print(data_X.shape)
+    # print(data_Y.shape)
     # X = torch.Tensor(data_X)
     # y = torch.Tensor(data_Y.ravel())
     y_onehot = pd.get_dummies(data_Y.get('Best Configuration')).values[:-1]
@@ -42,7 +70,7 @@ def get_data():
     return X, y
 
 
-def get_data_prev_onehot():
+def get_data_prev_onehot(config_files):
     data_X = []
     data_Y = []
     y_onehot_list = []
@@ -64,20 +92,22 @@ def get_data_prev_onehot():
     return X, y
 
 
-def get_data_prev_n(n):
+def get_data_prev_n(n, config_files, run_number):
     data_X = []
     data_Y = []
     y_onehot_list = []
-    df_y = pd.read_csv('best_config_file.csv')
+    df_y = pd.read_csv('train_{}/best_config_file.csv'.format(run_number))
+    number_of_rows = df_y.get('Best Configuration').count()
     if n > 0:
         y_onehot = pd.get_dummies(df_y.get('Best Configuration')).values[:-n]
-        print(y_onehot.shape)
+        # print(y_onehot.shape)
         y_onehot = np.vstack((np.zeros(shape=(n, 4), dtype=np.int), y_onehot))
     else:
         y_onehot = pd.get_dummies(df_y.get('Best Configuration')).values[:]
     for config, j in zip(config_files, range(len(config_files))):
         df = pd.read_csv(config, usecols=features).values
-        data_X.append(df)
+        data_X.append(df[0:number_of_rows])
+        # print(len(data_X))
         data_Y.append(df_y.get('Best Configuration').values)
         y_onehot_list.append(y_onehot)
     data_X = np.vstack(tuple(data_X))
@@ -92,7 +122,7 @@ def get_data_prev_n(n):
     return X, y
 
 
-def get_data_prev():
+def get_data_prev(config_files):
     data_X = np.array([[]])
     data_Y = np.array([[]])
     for config, j in zip(config_files, range(len(config_files))):
@@ -109,7 +139,7 @@ def get_data_prev():
 
 def train_RNN(model, label, input):
     label = label.long()
-    print(type(label))
+    # print(type(label))
     learning_rate = 0.0001
     predictions = []
     losses = []
@@ -134,30 +164,30 @@ def train_RNN(model, label, input):
     return np.vstack(tuple(predictions)), np.mean(np.array(losses))
 
 
-def train(model, label, input):
-    label = label.long()
-    batch_size = 32
-    # learning_rate = 0.00005
-    learning_rate = 0.0001
-    predictions = []
-    losses = []
-    for i in range(0, input.size()[0], batch_size):
-
-        model.zero_grad()
-        criterion = nn.NLLLoss()
-
-        predicted = model(input[i:i + batch_size])
-        predictions.append(np.argmax(predicted.detach().numpy(), axis=-1))
-
-        loss = criterion(predicted, label[i:i + batch_size])
-        loss.backward()
-        losses.append(loss.item())
-
-        # Add parameters' gradients to their values, multiplied by learning rate
-        for p in model.parameters():
-            p.data.add_(-learning_rate, p.grad.data)
-
-    return np.hstack(tuple(predictions)), np.mean(np.array(losses))
+# def train(model, label, input):
+#     label = label.long()
+#     batch_size = 32
+#     # learning_rate = 0.00005
+#     learning_rate = 0.0001
+#     predictions = []
+#     losses = []
+#     for i in range(0, input.size()[0], batch_size):
+#
+#         model.zero_grad()
+#         criterion = nn.NLLLoss()
+#
+#         predicted = model(input[i:i + batch_size])
+#         predictions.append(np.argmax(predicted.detach().numpy(), axis=-1))
+#
+#         loss = criterion(predicted, label[i:i + batch_size])
+#         loss.backward()
+#         losses.append(loss.item())
+#
+#         # Add parameters' gradients to their values, multiplied by learning rate
+#         for p in model.parameters():
+#             p.data.add_(-learning_rate, p.grad.data)
+#
+#     return np.hstack(tuple(predictions)), np.mean(np.array(losses))
 
 
 def train_optim(model, label, input):
@@ -194,38 +224,12 @@ def main():
     # X, y = get_data()
     # X, y = get_data_prev()
     # X, y = get_data_prev_onehot()
-    max_accuracy = []
-    # input_size, hidden_size, output_size = 12, 16, 8
-    # model = MLP(input_size, hidden_size, output_size)
-    for n in range(1, 5):
-        if n == 0:
-            input_size, hidden_size, output_size = 8, 16, 8
-        else:
-            input_size, hidden_size, output_size = 12, 16, 8
-        model = MLP(input_size, hidden_size, output_size)
-        X, y = get_data_prev_n(n)
-        epochs = 500
-        accuracy = []
-        print(y.size())
-        for i in range(epochs):
-            # output_i, loss = train(model, y, X)
-            output_i, loss = train_optim(model, y, X)
-            print("epoch {}".format(i))
-            print("accuracy = ", np.sum(output_i == y.numpy()) / y.size())
-            print("loss: {}".format(loss))
-            accuracy.append((np.sum(output_i == y.numpy()) / y.size())[0])
-
-        x = np.arange(len(accuracy))
-        plt.bar(x, height=accuracy, align='center')
-        plt.xlabel("epochs")
-        plt.ylabel("Accuracy")
-        plt.title("Accuracy over epochs")
-
-        max_accuracy.append([max(accuracy), accuracy.index(max(accuracy))])
-        plt.savefig('train_{}.png'.format(n))
-        plt.figure()
-
-    print(max_accuracy)
+    train_dict = {}
+    getConfigFilesList('.', False, 0, train_dict)
+    for key in train_dict.keys():
+        # print(train_dict[key])
+        train(train_dict[key], key)
+    #test()
     # model = RNN(input_size, hidden_size, output_size)
     # epochs = 500
     # print(y.size())
@@ -245,6 +249,39 @@ def main():
     # pl.scatter(data_time_steps[1:], predictions, label="Predicted")
     # pl.legend()
     # pl.show()
+
+
+def train(config_files, run_number):
+    max_accuracy = []
+    # input_size, hidden_size, output_size = 12, 16, 8
+    # model = MLP(input_size, hidden_size, output_size)
+    for n in range(1, 3):
+        if n == 0:
+            input_size, hidden_size, output_size = 8, 16, 8
+        else:
+            input_size, hidden_size, output_size = 12, 16, 8
+        model = MLP(input_size, hidden_size, output_size)
+        X, y = get_data_prev_n(n, config_files, run_number)
+        epochs = 500
+        accuracy = []
+        for i in range(epochs):
+            # output_i, loss = train(model, y, X)
+            output_i, loss = train_optim(model, y, X)
+            print("epoch {}".format(i))
+            print("accuracy = ", np.sum(output_i == y.numpy()) / y.size())
+            print("loss: {}".format(loss))
+            accuracy.append((np.sum(output_i == y.numpy()) / y.size())[0])
+
+        x = np.arange(len(accuracy))
+        plt.bar(x, height=accuracy, align='center')
+        plt.xlabel("epochs")
+        plt.ylabel("Accuracy")
+        plt.title("Accuracy over epochs")
+
+        max_accuracy.append([max(accuracy), accuracy.index(max(accuracy))])
+        plt.savefig('train_{}_{}.png'.format(run_number, n))
+        plt.figure()
+    print('run_number: ', run_number, ', Maximum accuracy: ', max_accuracy)
 
 
 if __name__ == "__main__":
