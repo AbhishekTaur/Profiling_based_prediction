@@ -27,6 +27,17 @@ def getListOfFiles(dirName):
     return allFiles
 
 
+def merge_data(processed_file, merged_file, numberOfFiles):
+    df = pd.read_csv(processed_file)
+    merge_dict = {}
+    key_size = ((numberOfFiles/8)-1)/2
+    for key in df.keys():
+        merge_dict[key] = df[key].values[:int(key_size)] if key == 'Normalized time avg' else df[key].values[int(key_size)+1:]
+
+    df_merge = pd.DataFrame(data=merge_dict)
+    df_merge.to_csv(path_or_buf='./{}'.format(merged_file), index=False)
+
+
 def main():
     dirName = '../blacksholes'
 
@@ -39,8 +50,12 @@ def main():
                     'processed_config_4_100.csv', 'processed_config_8_40.csv', 'processed_config_8_60.csv',
                     'processed_config_8_80.csv', 'processed_config_8_100.csv']
 
+    merged_files = ['merged_config_4_40.csv', 'merged_config_4_60.csv', 'merged_config_4_80.csv',
+                    'merged_config_4_100.csv', 'merged_config_8_40.csv', 'merged_config_8_60.csv',
+                    'merged_config_8_80.csv', 'merged_config_8_100.csv']
+
     exists = False
-    for config in config_files:
+    for config, merge_file in zip(config_files, merged_files):
         exists = os.path.isfile(config)
         if not exists:
             with open(config, "w", newline='') as processed_file:
@@ -48,7 +63,6 @@ def main():
                 writer.writerow(row)
             processed_file.close()
 
-    # Print the files
     if not exists:
         for elem in listOfFiles:
 
@@ -71,7 +85,11 @@ def main():
                 process_file(file, 'processed_config_8_40.csv')
             file.close()
 
-    write_best_config(config_files)
+    for processed_file, merge_file in zip(config_files, merged_files):
+        if not os.path.isfile(merge_file):
+            merge_data(processed_file, merge_file, len(listOfFiles))
+
+    write_best_config(merged_files)
 
 
 def write_best_config(config_files):
@@ -86,7 +104,7 @@ def write_best_config(config_files):
     if not config_exists:
         with open("best_config_file.csv", "w", newline="") as best_config:
             writer = csv.writer(best_config)
-            writer.writerow(['Best Configuration'])
+            writer.writerow(['Best Configuration', 'Previous Best Configuration'])
         best_config.close()
 
         for i in range(number_of_rows):
@@ -94,9 +112,18 @@ def write_best_config(config_files):
                 [data[0:1, i:i + 1][0][0], data[1:2, i:i + 1][0][0], data[2:3, i:i + 1][0][0], data[3:4, i:i + 1][0][0],
                  data[4:5, i:i + 1][0][0], data[5:6, i:i + 1][0][0], data[6:7, i:i + 1][0][0],
                  data[7:8, i:i + 1][0][0]])
+            sorted_cycles_arr = sorted(cycles_arr)
             with open("best_config_file.csv", "a", newline="") as best_config:
                 writer = csv.writer(best_config)
-                writer.writerow([np.where(cycles_arr == max(cycles_arr))[0][0]])
+                print(cycles_arr)
+
+                print(np.where(cycles_arr == sorted(cycles_arr)[-2])[0][0])
+                if sorted_cycles_arr[0] == sorted_cycles_arr[1]:
+                    best_configs = [l for l, k in enumerate(cycles_arr) if k == min(cycles_arr)]
+                    writer.writerow([best_configs[0], best_configs[1]])
+                else:
+                    writer.writerow([np.where(cycles_arr == sorted_cycles_arr[0])[0][0],
+                                     np.where(cycles_arr == sorted_cycles_arr[1])[0][0]])
             best_config.close()
 
 
