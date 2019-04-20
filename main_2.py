@@ -14,7 +14,7 @@ data = (np.sin(data_time_steps) * 5 + 5).astype(int)
 data.resize((seq_length + 1, 1))
 
 features = ['Normalized integer', 'Normalized floating', 'Normalized control', 'Normalized time avg',
-            'Ratio Memory', 'Ratio branches', 'Ratio call', 'Phase']
+            'Ratio Memory', 'Ratio branches', 'Ratio call']
 
 # config_files = ['merged_config_{}_4_40.csv'.format('train'),
 #                 'merged_config_{}_4_60.csv'.format('train'),
@@ -97,25 +97,29 @@ def get_data_prev_n(n, config_files, run_number):
     data_Y = []
     y_onehot_list = []
     df_y = pd.read_csv('train_{}/best_config_file.csv'.format(run_number))
-    number_of_rows = df_y.get('Best Configuration').count()
+    # number_of_rows = df_y.get('Best Configuration').count()
     if n > 0:
         y_onehot = pd.get_dummies(df_y.get('Best Configuration')).values[:-n]
-        # print(y_onehot.shape)
-        y_onehot = np.vstack((np.zeros(shape=(n, 4), dtype=np.int), y_onehot))
+        print(y_onehot.shape[1])
+        y_onehot = np.vstack((np.zeros(shape=(n, y_onehot.shape[1]), dtype=np.int), y_onehot))
     else:
         y_onehot = pd.get_dummies(df_y.get('Best Configuration')).values[:]
     for config, j in zip(config_files, range(len(config_files))):
         df = pd.read_csv(config, usecols=features).values
-        data_X.append(df[0:number_of_rows])
+        data_X.append(df)
+        number_of_rows = len(df/len(features))
         # print(len(data_X))
-        data_Y.append(df_y.get('Best Configuration').values)
+        #data_Y.append(df_y.get('Best Configuration').values[0:52])
+
         y_onehot_list.append(y_onehot)
     data_X = np.vstack(tuple(data_X))
-    data_Y = np.vstack(tuple(data_Y))
-    y_onehot_list = np.vstack(tuple(y_onehot_list))
+    data_Y = df_y.get('Best Configuration').values
+    #data_Y = np.vstack(tuple(data_Y))
+    #y_onehot_list = np.vstack(tuple(y_onehot_list))
     # data_X = np.array(data_X).reshape(8864, 8)
     if n > 0:
-        data_X = np.hstack((data_X, y_onehot_list))
+        data_X = np.hstack((data_X, y_onehot))
+        #data_X = np.hstack((data_X, y_onehot_list))
 
     X = torch.Tensor(data_X)
     y = torch.Tensor(data_Y.ravel())
@@ -255,13 +259,14 @@ def train(config_files, run_number):
     max_accuracy = []
     # input_size, hidden_size, output_size = 12, 16, 8
     # model = MLP(input_size, hidden_size, output_size)
-    for n in range(1, 3):
-        if n == 0:
-            input_size, hidden_size, output_size = 8, 16, 8
-        else:
-            input_size, hidden_size, output_size = 12, 16, 8
-        model = MLP(input_size, hidden_size, output_size)
+    for n in range(0, 3):
         X, y = get_data_prev_n(n, config_files, run_number)
+        # if n == 0:
+        #     input_size, hidden_size, output_size = 7, 16, 8
+        # else:
+        #     input_size, hidden_size, output_size = 10, 16, 8
+        input_size, hidden_size, output_size = X.shape[1], 16, 8
+        model = MLP(input_size, hidden_size, output_size)
         epochs = 500
         accuracy = []
         for i in range(epochs):
