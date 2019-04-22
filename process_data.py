@@ -38,6 +38,11 @@ def getListOfFiles(dirName, subset, train):
 
     return allFiles
 
+def getLeastNumberOfRows(merge_dict):
+    min_rows = min([len(merge_dict[key]) for key in merge_dict.keys()])
+    print(min_rows)
+    for key in merge_dict.keys():
+        merge_dict[key] = merge_dict[key][0:min_rows]
 
 def merge_data(processed_file, merged_file):
     df = pd.read_csv(processed_file)
@@ -51,6 +56,7 @@ def merge_data(processed_file, merged_file):
             elif re.search("x86.", file) and key != 'Normalized time avg':
                 merge_dict[key].append(df[key].values[count])
             count = count + 1
+    getLeastNumberOfRows(merge_dict)
 
     df_merge = pd.DataFrame(data=merge_dict)
     df_merge.to_csv(path_or_buf='./{}'.format(merged_file), index=False)
@@ -119,32 +125,36 @@ def main():
 
 
 def create_data(config_files, listOfTrainFiles, merged_files, row, phase, run_number):
+    exists = False
     for config, merge_file in zip(config_files, merged_files):
-        with open(config, "w", newline='') as processed_file:
-            writer = csv.writer(processed_file)
-            writer.writerow(row)
-        processed_file.close()
+        exists = os.path.exists(config)
+        if not exists:
+            with open(config, "w", newline='') as processed_file:
+                writer = csv.writer(processed_file)
+                writer.writerow(row)
+            processed_file.close()
     folder = '{}{}{}'.format(phase, '_', run_number)
-    for elem in listOfTrainFiles:
+    if not exists:
+        for elem in listOfTrainFiles:
 
-        file = open(elem, "r")
-        if '4core-100cache' in file.name:
-            process_file(file, '{}/processed_config_{}_4_100.csv'.format(folder, phase))
-        if '4core-80cache' in file.name:
-            process_file(file, '{}/processed_config_{}_4_80.csv'.format(folder, phase))
-        if '4core-60cache' in file.name:
-            process_file(file, '{}/processed_config_{}_4_60.csv'.format(folder, phase))
-        if '4core-40cache' in file.name:
-            process_file(file, '{}/processed_config_{}_4_40.csv'.format(folder, phase))
-        if '8core-100cache' in file.name:
-            process_file(file, '{}/processed_config_{}_8_100.csv'.format(folder, phase))
-        if '8core-80cache' in file.name:
-            process_file(file, '{}/processed_config_{}_8_80.csv'.format(folder, phase))
-        if '8core-60cache' in file.name:
-            process_file(file, '{}/processed_config_{}_8_60.csv'.format(folder, phase))
-        if '8core-40cache' in file.name:
-            process_file(file, '{}/processed_config_{}_8_40.csv'.format(folder, phase))
-        file.close()
+            file = open(elem, "r")
+            if '4core-100cache' in file.name:
+                process_file(file, '{}/processed_config_{}_4_100.csv'.format(folder, phase))
+            if '4core-80cache' in file.name:
+                process_file(file, '{}/processed_config_{}_4_80.csv'.format(folder, phase))
+            if '4core-60cache' in file.name:
+                process_file(file, '{}/processed_config_{}_4_60.csv'.format(folder, phase))
+            if '4core-40cache' in file.name:
+                process_file(file, '{}/processed_config_{}_4_40.csv'.format(folder, phase))
+            if '8core-100cache' in file.name:
+                process_file(file, '{}/processed_config_{}_8_100.csv'.format(folder, phase))
+            if '8core-80cache' in file.name:
+                process_file(file, '{}/processed_config_{}_8_80.csv'.format(folder, phase))
+            if '8core-60cache' in file.name:
+                process_file(file, '{}/processed_config_{}_8_60.csv'.format(folder, phase))
+            if '8core-40cache' in file.name:
+                process_file(file, '{}/processed_config_{}_8_40.csv'.format(folder, phase))
+            file.close()
     for processed_file, merge_file in zip(config_files, merged_files):
         if not os.path.isfile(merge_file):
             merge_data(processed_file, merge_file)
