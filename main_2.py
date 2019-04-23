@@ -25,26 +25,37 @@ features = ['Normalized integer', 'Normalized floating', 'Normalized control', '
 #                 'merged_config_{}_8_80.csv'.format('train'),
 #                 'merged_config_{}_8_100.csv'.format('train')]
 
+one_hot_encoder = {0: [0,0,0,0,0,0,0,1], 1: [0,0,0,0,0,0,1,0], 2: [0,0,0,0,0,1,0,0], 3: [0,0,0,0,1,0,0,0],
+                   4: [0, 0, 0, 1, 0, 0, 0, 0], 5: [0,0,1,0,0,0,0,0], 6: [0,1,0,0,0,0,0,0], 7: [1,0,0,0,0,0,0,0]}
 
-def getConfigFilesList(dirName, inside, run_number, train_dict):
+def oneHotEncoding(y):
+    y_out = []
+    for i in range(len(y)):
+        y_out.append(one_hot_encoder[y[i]])
+    return y_out
+
+def getConfigFilesList(dirName, inside, run_number, dict_t, phase):
 
     listOfFile = os.listdir(dirName)
     for entry in listOfFile:
-
-        if re.search('^train_\d{1,4}$', entry):
+        if phase == 'train':
+            searchString = '^train_\d{1,4}$'
+        else:
+            searchString = '^test_\d{1,4}$'
+        if re.search(searchString, entry):
             inside = True
             run_number = int(entry.split("_")[1])
-            if not run_number in train_dict.keys():
-                train_dict[run_number] = []
-            elif len(train_dict[run_number]) == 8:
+            if not run_number in dict_t.keys():
+                dict_t[run_number] = []
+            elif len(dict_t[run_number]) == 8:
                 inside = False
 
         if inside:
             fullPath = os.path.join(dirName, entry)
             if os.path.isdir(fullPath):
-                getConfigFilesList(fullPath, inside, run_number, train_dict)
-            elif 'merged_' in fullPath:
-                train_dict[run_number].append(fullPath)
+                getConfigFilesList(fullPath, inside, run_number, dict_t, phase)
+            elif 'merged_config_{}'.format(phase) in fullPath:
+                dict_t[run_number].append(fullPath)
 
 # config_files = ['processed_config_4_40.csv', 'processed_config_4_60.csv', 'processed_config_4_80.csv',
 #                 'processed_config_4_100.csv', 'processed_config_8_40.csv', 'processed_config_8_60.csv',
@@ -99,9 +110,10 @@ def get_data_prev_n(n, config_files, run_number):
     df_y = pd.read_csv('train_{}/best_config_file.csv'.format(run_number))
     # number_of_rows = df_y.get('Best Configuration').count()
     if n > 0:
-        y_onehot = pd.get_dummies(df_y.get('Best Configuration')).values[:-n]
-        print(y_onehot.shape[1])
-        y_onehot = np.vstack((np.zeros(shape=(n, y_onehot.shape[1]), dtype=np.int), y_onehot))
+        #y_onehot = pd.get_dummies(df_y.get('Best Configuration')).values[:-n]
+        y_onehot = oneHotEncoding(df_y.get('Best Configuration').values)[:-n]
+        #y_onehot = np.vstack((np.zeros(shape=(n, y_onehot.shape[1]), dtype=np.int), y_onehot))
+        y_onehot = np.vstack((np.zeros(shape=(n, 8), dtype=np.int), y_onehot))
     else:
         y_onehot = pd.get_dummies(df_y.get('Best Configuration')).values[:]
     for config, j in zip(config_files, range(len(config_files))):
@@ -124,6 +136,23 @@ def get_data_prev_n(n, config_files, run_number):
     X = torch.Tensor(data_X)
     y = torch.Tensor(data_Y.ravel())
     return X, y
+
+
+def get_validation_data(n, config_files, run_number):
+    data_X = []
+    data_Y = []
+    df_y = pd.read_csv('test_{}/best_config_file.csv'.format(run_number))
+    one_hot = 0
+    if n > 0:
+        y_onehot = pd.get_dummies(df_y.get('Best Configuration')).values
+        one_hot = y_onehot.shape[1]
+    for config, j in zip(config_files, range(len(config_files))):
+        df = pd.read_csv(config, usecols=features).values
+        data_X.append(df)
+    data_X = np.vstack(tuple(data_X))
+    data_Y = df_y.get('Best Configuration').values
+
+    return data_X, data_Y.ravel(), one_hot
 
 
 def get_data_prev(config_files):
@@ -221,6 +250,28 @@ def train_optim(model, label, input):
     return np.hstack(tuple(predictions)), np.mean(np.array(losses))
 
 
+def validate(n, test_files, run_number):
+    # input_size, hidden_size, output_size = 12, 16, 8
+    # model = MLP(input_size, hidden_size, output_size)
+    X, y, one_hot = get_validation_data(n, test_files, run_number)
+    input_size, hidden_size, output_size = X.shape[1] + one_hot, 16, 8
+    model = MLP(input_size, hidden_size, output_size)
+    test_output = []
+    for i in range(len(X)):
+        test_point = X[i].ravel()
+        if i == 0:
+            if n > 0:
+                test_point = np.hstack((test_point.reshape(1, test_point.shape[0]), np.zeros(shape=(1, 8))))
+        else:
+            if n > 0:
+                test_point = np.hstack((test_point.reshape(1, test_point.shape[0]), oneHotEncoding([test_output[-1]])))
+
+        output = model(torch.Tensor(test_point).reshape(1, -1))
+
+        test_output.append(np.argmax(output.detach().numpy(), axis=-1)[0])
+    print('run_number: ', run_number, ',test accuracy: ', np.sum(test_output == np.asarray(y))/ y.size)
+
+
 def main():
     # input_size, hidden_size, output_size = 68, 128, 8
     # input_size, hidden_size, output_size = 12, 16, 8
@@ -229,10 +280,12 @@ def main():
     # X, y = get_data_prev()
     # X, y = get_data_prev_onehot()
     train_dict = {}
-    getConfigFilesList('.', False, 0, train_dict)
+    test_dict = {}
+    getConfigFilesList('.', False, 0, train_dict, 'train')
+    getConfigFilesList('.', False, 0, test_dict, 'test')
     for key in train_dict.keys():
         # print(train_dict[key])
-        train(train_dict[key], key)
+        train(train_dict[key], key, test_dict[key])
     #test()
     # model = RNN(input_size, hidden_size, output_size)
     # epochs = 500
@@ -255,7 +308,7 @@ def main():
     # pl.show()
 
 
-def train(config_files, run_number):
+def train(config_files, run_number, test_files):
     max_accuracy = []
     # input_size, hidden_size, output_size = 12, 16, 8
     # model = MLP(input_size, hidden_size, output_size)
@@ -267,7 +320,7 @@ def train(config_files, run_number):
         #     input_size, hidden_size, output_size = 10, 16, 8
         input_size, hidden_size, output_size = X.shape[1], 16, 8
         model = MLP(input_size, hidden_size, output_size)
-        epochs = 500
+        epochs = 2
         accuracy = []
         for i in range(epochs):
             # output_i, loss = train(model, y, X)
@@ -276,6 +329,7 @@ def train(config_files, run_number):
             print("accuracy = ", np.sum(output_i == y.numpy()) / y.size())
             print("loss: {}".format(loss))
             accuracy.append((np.sum(output_i == y.numpy()) / y.size())[0])
+            validate(n, test_files, run_number)
 
         x = np.arange(len(accuracy))
         plt.bar(x, height=accuracy, align='center')
