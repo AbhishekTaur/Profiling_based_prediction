@@ -8,7 +8,6 @@ import os
 import re
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import accuracy_score
-from sklearn.metrics import classification_report
 
 lr = 0.1
 seq_length = 20
@@ -57,7 +56,6 @@ def getConfigFilesList(dirName, inside, run_number, dict_t, phase):
 
 def get_data_prev_n(n, config_files, run_number):
     data_X = []
-    data_Y = []
     y_onehot_list = []
     df_y = pd.read_csv('train_{}/best_config_file.csv'.format(run_number))
     if n > 0:
@@ -82,7 +80,6 @@ def get_data_prev_n(n, config_files, run_number):
 
 def get_validation_data(n, config_files, run_number):
     data_X = []
-    data_Y = []
     df_y = pd.read_csv('test_{}/best_config_file.csv'.format(run_number))
     one_hot = 0
     if n > 0:
@@ -171,6 +168,7 @@ def validate(n, test_files, run_number):
 
 
 def main():
+    [os.remove(os.path.join(".", f)) for f in os.listdir(".") if f.endswith(".png")]
     train_dict = {}
     test_dict = {}
     getConfigFilesList('.', False, 0, train_dict, 'train')
@@ -200,6 +198,7 @@ def plot_actual_epoch(output, i, n):
     plt.savefig('Actual_{}_{}.png'.format(i, n))
     plt.figure()
 
+
 def freq(lst):
     d = {}
     for i in lst:
@@ -209,6 +208,7 @@ def freq(lst):
             d[i] = 1
     return d
 
+
 def train(config_files, run_number, test_files):
     max_accuracy = []
     max_validation_accuracy = []
@@ -216,7 +216,7 @@ def train(config_files, run_number, test_files):
         X, y = get_data_prev_n(n, config_files, run_number)
         input_size, hidden_size, output_size = X.shape[1], 16, 8
         model = MLP(input_size, hidden_size, output_size)
-        epochs = 100
+        epochs = 500
         accuracy = []
         test_accuracy = []
         for i in range(epochs):
@@ -226,8 +226,6 @@ def train(config_files, run_number, test_files):
             print("loss: {}".format(loss))
             accuracy.append((np.sum(output_i == y.numpy()) / y.size())[0])
             test_accuracy.append(validate(n, test_files, run_number))
-
-
 
         x = np.arange(len(accuracy))
         plt.bar(x, height=accuracy, align='center')

@@ -35,7 +35,7 @@ class MLP(nn.Module):
 
     def forward(self, input):
         hidden = self.i2h(input)
-        torch.nn.Dropout(0.5)
+        torch.nn.Dropout(0.2)
         output = self.h2o(hidden)
         output = self.softmax(output)
         return output
