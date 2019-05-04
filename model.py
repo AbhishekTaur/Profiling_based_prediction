@@ -26,18 +26,16 @@ class RNN(nn.Module):
 class MLP(nn.Module):
     def __init__(self, input_size, hidden_size, output_size):
         super(MLP, self).__init__()
-
+        self.input_size = input_size
         self.hidden_size = hidden_size
-        #print('hidden size assigned: ', hidden_size)
 
         self.i2h = nn.Linear(input_size, hidden_size)
         self.h2o = nn.Linear(hidden_size, output_size)
         self.softmax = nn.LogSoftmax(dim=1)
 
     def forward(self, input):
-        #print('input size: ', input.size())
         hidden = self.i2h(input)
-        #print('hidden size: ', hidden.size())
+        torch.nn.Dropout(0.5)
         output = self.h2o(hidden)
         output = self.softmax(output)
         return output
