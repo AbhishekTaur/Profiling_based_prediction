@@ -179,8 +179,8 @@ def validate(n, test_files, run_number, model):
     print("Frequency output: ", freq(test_output))
     print("Frequency y: ", freq(y))
     results = confusion_matrix(y, test_output)
-    # print('Confusion Matrix :')
-    # print(results)
+    print('Confusion Matrix :')
+    print(results)
     # print('Accuracy Score :', accuracy_score(y, test_output))
     return np.sum(test_output == np.asarray(y)) / y.size
 
@@ -243,7 +243,7 @@ def parse_indexes(list1):
 def train(config_files, run_number, test_files):
     max_accuracy = []
     max_validation_accuracy = []
-    for n in range(1, 2):
+    for n in range(0, 2):
         X, y = get_data_prev_n(n, config_files, run_number)
         input_size, hidden_size, output_size = X.shape[1], 8, 8
         model = MLP(input_size, hidden_size, output_size)
