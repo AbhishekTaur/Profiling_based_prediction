@@ -1,5 +1,7 @@
 import torch
 import numpy as np
+from sklearn.preprocessing import MinMaxScaler
+
 from model import MLP
 import torch.nn as nn
 import pandas as pd
@@ -8,6 +10,8 @@ import os
 import re
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import accuracy_score
+from collections import Counter
+
 
 lr = 0.1
 seq_length = 20
@@ -73,6 +77,19 @@ def get_data_prev_n(n, config_files, run_number):
     if n > 0:
         data_X = np.hstack((data_X, y_onehot))
 
+    scaler = MinMaxScaler()
+    scaler.fit(data_X)
+    data_X = scaler.transform(data_X)
+    # p = np.random.permutation(len(data_X))
+    # X = torch.Tensor(data_X[p])
+    # y = torch.Tensor(data_Y[p].ravel())
+    # indexes = parse_indexes(data_Y)
+    # np.random.shuffle(data_X[indexes])
+    # np.random.shuffle(data_Y[indexes].ravel())
+    # X = torch.Tensor(data_X[indexes])
+    # y = torch.Tensor(data_Y[indexes].ravel())
+    np.random.shuffle(data_X)
+    np.random.shuffle(data_Y)
     X = torch.Tensor(data_X)
     y = torch.Tensor(data_Y.ravel())
     return X, y
@@ -125,6 +142,8 @@ def train_optim(model, label, input):
     predictions = []
     losses = []
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+    # print("Minumum: ", np.min(input.numpy(), axis=1))
+    # print("Maximum: ", np.max(input.numpy(), axis=1))
     for i in range(0, input.size()[0], batch_size):
         optimizer.zero_grad()
         criterion = nn.NLLLoss()
@@ -140,30 +159,29 @@ def train_optim(model, label, input):
     return np.hstack(tuple(predictions)), np.mean(np.array(losses))
 
 
-def validate(n, test_files, run_number):
+def validate(n, test_files, run_number, model):
     X, y, one_hot = get_validation_data(n, test_files, run_number)
-    input_size, hidden_size, output_size = X.shape[1] + one_hot, 16, 8
-    model = MLP(input_size, hidden_size, output_size)
     test_output = []
-    for i in range(len(X)):
-        test_point = X[i].ravel()
-        if i == 0:
-            if n > 0:
-                test_point = np.hstack((test_point.reshape(1, test_point.shape[0]), np.zeros(shape=(1, 8))))
-        else:
-            if n > 0:
-                test_point = np.hstack((test_point.reshape(1, test_point.shape[0]), oneHotEncoding([test_output[-1]])))
+    with torch.no_grad():
+        for i in range(len(X)):
+            test_point = X[i].ravel()
+            if i == 0:
+                if n > 0:
+                    test_point = np.hstack((test_point.reshape(1, test_point.shape[0]), np.zeros(shape=(1, 8))))
+            else:
+                if n > 0:
+                    test_point = np.hstack((test_point.reshape(1, test_point.shape[0]), oneHotEncoding([test_output[-1]])))
 
-        output = model(torch.Tensor(test_point).reshape(1, -1))
+            output = model(torch.Tensor(test_point).reshape(1, -1))
 
-        test_output.append(np.argmax(output.detach().numpy(), axis=-1)[0])
+            test_output.append(np.argmax(output.detach().numpy(), axis=-1)[0])
     print('run_number: ', run_number, ',test accuracy: ', np.sum(np.asarray(test_output) == np.asarray(y)) / y.size)
     print("Frequency output: ", freq(test_output))
     print("Frequency y: ", freq(y))
     results = confusion_matrix(y, test_output)
-    print('Confusion Matrix :')
-    print(results)
-    print('Accuracy Score :', accuracy_score(y, test_output))
+    # print('Confusion Matrix :')
+    # print(results)
+    # print('Accuracy Score :', accuracy_score(y, test_output))
     return np.sum(test_output == np.asarray(y)) / y.size
 
 
@@ -179,7 +197,7 @@ def main():
 
 def plot_output_epoch(output, i, n):
     x = np.arange(len(output))
-    plt.bar(x, height=output, align='center')
+    plt.plot(x, height=output, align='center')
     plt.xlabel("datapoint")
     plt.ylabel("Predicted")
     plt.title("Prediction for {} epoch".format(i))
@@ -190,7 +208,7 @@ def plot_output_epoch(output, i, n):
 
 def plot_actual_epoch(output, i, n):
     x = np.arange(len(output))
-    plt.bar(x, height=output, align='center')
+    plt.plot(x, height=output, align='center')
     plt.xlabel("datapoint")
     plt.ylabel("Predicted")
     plt.title("Actual for {} epoch".format(i))
@@ -209,14 +227,27 @@ def freq(lst):
     return d
 
 
+def parse_indexes(list1):
+    index_list = []
+    dictor = Counter(list1)
+    counter_list = [dictor[x] for x in dictor]
+    counter_list.sort()
+    if len(counter_list) > 1:
+        indexes = counter_list[-2]
+
+    for x in dictor:
+        index_list = index_list + list(np.where(list1 == x)[0][0:indexes])
+    return index_list
+
+
 def train(config_files, run_number, test_files):
     max_accuracy = []
     max_validation_accuracy = []
     for n in range(1, 2):
         X, y = get_data_prev_n(n, config_files, run_number)
-        input_size, hidden_size, output_size = X.shape[1], 16, 8
+        input_size, hidden_size, output_size = X.shape[1], 8, 8
         model = MLP(input_size, hidden_size, output_size)
-        epochs = 500
+        epochs = 200
         accuracy = []
         test_accuracy = []
         for i in range(epochs):
@@ -225,10 +256,10 @@ def train(config_files, run_number, test_files):
             print("accuracy = ", np.sum(output_i == y.numpy()) / y.size())
             print("loss: {}".format(loss))
             accuracy.append((np.sum(output_i == y.numpy()) / y.size())[0])
-            test_accuracy.append(validate(n, test_files, run_number))
+            test_accuracy.append(validate(n, test_files, run_number, model))
 
         x = np.arange(len(accuracy))
-        plt.bar(x, height=accuracy, align='center')
+        plt.plot(x, accuracy)
         plt.xlabel("epochs")
         plt.ylabel("Accuracy")
         plt.title("Accuracy over epochs")
@@ -238,7 +269,7 @@ def train(config_files, run_number, test_files):
         plt.figure()
 
         x_validate = np.arange(len(test_accuracy))
-        plt.bar(x_validate, height=test_accuracy, align='center')
+        plt.plot(x_validate, test_accuracy, color='r')
         plt.xlabel("epochs")
         plt.ylabel("Accuracy")
         plt.title("Test Accuracy over epochs")

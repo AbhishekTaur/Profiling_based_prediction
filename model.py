@@ -30,12 +30,13 @@ class MLP(nn.Module):
         self.hidden_size = hidden_size
 
         self.i2h = nn.Linear(input_size, hidden_size)
+        self.dropout = nn.Dropout(0.1)
         self.h2o = nn.Linear(hidden_size, output_size)
         self.softmax = nn.LogSoftmax(dim=1)
 
     def forward(self, input):
         hidden = self.i2h(input)
-        torch.nn.Dropout(0.2)
+        hidden = self.dropout(hidden)
         output = self.h2o(hidden)
         output = self.softmax(output)
         return output
