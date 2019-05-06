@@ -6,13 +6,15 @@ import pandas as pd
 from random import sample
 from random import randint
 from random import seed
+
 '''
     For the given path, get the List of all files in the directory tree 
 '''
 
 program_dict = {'blackscholes': 0, 'dedup': 1, 'streamcluster': 2, 'swaptions': 3, 'freqmine': 4, 'fluidanimate': 5}
 
-seed(1)
+seed(2)
+
 
 def getListOfFiles(dirName, subset, train):
     # create a list of file and sub directories
@@ -38,11 +40,13 @@ def getListOfFiles(dirName, subset, train):
 
     return allFiles
 
+
 def getLeastNumberOfRows(merge_dict):
     min_rows = min([len(merge_dict[key]) for key in merge_dict.keys()])
     print(min_rows)
     for key in merge_dict.keys():
         merge_dict[key] = merge_dict[key][0:min_rows]
+
 
 def merge_data(processed_file, merged_file):
     df = pd.read_csv(processed_file)
@@ -79,7 +83,6 @@ def main():
         os.mkdir(train_data_folder)
         print("Created directories: {}".format(train_data_folder))
         print("Created directories: {}".format(test_data_folder))
-
 
     row = ['Filename', 'Normalized integer', 'Normalized floating', 'Normalized control', 'Cycles',
            'Normalized time avg',
@@ -126,36 +129,117 @@ def main():
 
 
 def create_data(config_files, listOfTrainFiles, merged_files, row, phase, run_number):
+    process_df_4_100_train = pd.DataFrame(columns=row)
+    process_df_4_80_train = pd.DataFrame(columns=row)
+    process_df_4_60_train = pd.DataFrame(columns=row)
+    process_df_4_40_train = pd.DataFrame(columns=row)
+    process_df_8_100_train = pd.DataFrame(columns=row)
+    process_df_8_80_train = pd.DataFrame(columns=row)
+    process_df_8_60_train = pd.DataFrame(columns=row)
+    process_df_8_40_train = pd.DataFrame(columns=row)
+    process_df_4_100_test = pd.DataFrame(columns=row)
+    process_df_4_80_test = pd.DataFrame(columns=row)
+    process_df_4_60_test = pd.DataFrame(columns=row)
+    process_df_4_40_test = pd.DataFrame(columns=row)
+    process_df_8_100_test = pd.DataFrame(columns=row)
+    process_df_8_80_test = pd.DataFrame(columns=row)
+    process_df_8_60_test = pd.DataFrame(columns=row)
+    process_df_8_40_test = pd.DataFrame(columns=row)
     exists = False
     for config, merge_file in zip(config_files, merged_files):
         exists = os.path.exists(config)
-        if not exists:
-            with open(config, "w", newline='') as processed_file:
-                writer = csv.writer(processed_file)
-                writer.writerow(row)
-            processed_file.close()
+        # if not exists:
+        #     with open(config, "w", newline='') as processed_file:
+        #         writer = csv.writer(processed_file)
+        #         writer.writerow(row)
+        #     processed_file.close()
     folder = '{}{}{}'.format(phase, '_', run_number)
     if not exists:
         for elem in listOfTrainFiles:
 
             file = open(elem, "r")
             if '4core-100cache' in file.name:
-                process_file(file, '{}/processed_config_{}_4_100.csv'.format(folder, phase))
+                if phase == 'train':
+                    process_df_4_100_train = process_file(file, process_df_4_100_train)
+                else:
+                    process_df_4_100_test = process_file(file, process_df_4_100_test)
             if '4core-80cache' in file.name:
-                process_file(file, '{}/processed_config_{}_4_80.csv'.format(folder, phase))
+                if phase == 'train':
+                    process_df_4_80_train = process_file(file, process_df_4_80_train)
+                else:
+                    process_df_4_80_test = process_file(file, process_df_4_80_test)
             if '4core-60cache' in file.name:
-                process_file(file, '{}/processed_config_{}_4_60.csv'.format(folder, phase))
+                if phase == 'train':
+                    process_df_4_60_train = process_file(file, process_df_4_60_train)
+                else:
+                    process_df_4_60_test = process_file(file, process_df_4_60_test)
             if '4core-40cache' in file.name:
-                process_file(file, '{}/processed_config_{}_4_40.csv'.format(folder, phase))
+                if phase == 'train':
+                    process_df_4_40_train = process_file(file, process_df_4_40_train)
+                else:
+                    process_df_4_40_test = process_file(file, process_df_4_40_test)
             if '8core-100cache' in file.name:
-                process_file(file, '{}/processed_config_{}_8_100.csv'.format(folder, phase))
+                if phase == 'train':
+                    process_df_8_100_train = process_file(file, process_df_8_100_train)
+                else:
+                    process_df_8_100_test = process_file(file, process_df_8_100_test)
             if '8core-80cache' in file.name:
-                process_file(file, '{}/processed_config_{}_8_80.csv'.format(folder, phase))
+                if phase == 'train':
+                    process_df_8_80_train = process_file(file, process_df_8_80_train)
+                else:
+                    process_df_8_80_test = process_file(file, process_df_8_80_test)
             if '8core-60cache' in file.name:
-                process_file(file, '{}/processed_config_{}_8_60.csv'.format(folder, phase))
+                if phase == 'train':
+                    process_df_8_60_train = process_file(file, process_df_8_60_train)
+                else:
+                    process_df_8_60_test = process_file(file, process_df_8_60_test)
             if '8core-40cache' in file.name:
-                process_file(file, '{}/processed_config_{}_8_40.csv'.format(folder, phase))
+                if phase == 'train':
+                    process_df_8_40_train = process_file(file, process_df_8_40_train)
+                else:
+                    process_df_8_40_test = process_file(file, process_df_8_40_test)
             file.close()
+    for config_file in config_files:
+        if '4_100' in config_file:
+            if phase == 'train':
+                process_df_4_100_train.to_csv(config_file, index=False)
+            else:
+                process_df_4_100_test.to_csv(config_file, index=False)
+        if '4_80' in config_file:
+            if phase == 'train':
+                process_df_4_80_train.to_csv(config_file, index=False)
+            else:
+                process_df_4_80_test.to_csv(config_file, index=False)
+        if '4_60' in config_file:
+            if phase == 'train':
+                process_df_4_60_train.to_csv(config_file, index=False)
+            else:
+                process_df_4_60_test.to_csv(config_file, index=False)
+        if '4_40' in config_file:
+            if phase == 'train':
+                process_df_4_40_train.to_csv(config_file, index=False)
+            else:
+                process_df_4_40_test.to_csv(config_file, index=False)
+        if '8_100' in config_file:
+            if phase == 'train':
+                process_df_8_100_train.to_csv(config_file, index=False)
+            else:
+                process_df_8_100_test.to_csv(config_file, index=False)
+        if '8_80' in config_file:
+            if phase == 'train':
+                process_df_8_80_train.to_csv(config_file, index=False)
+            else:
+                process_df_8_80_test.to_csv(config_file, index=False)
+        if '8_60' in config_file:
+            if phase == 'train':
+                process_df_8_60_train.to_csv(config_file, index=False)
+            else:
+                process_df_8_60_test.to_csv(config_file, index=False)
+        if '8_40' in config_file:
+            if phase == 'train':
+                process_df_8_40_train.to_csv(config_file, index=False)
+            else:
+                process_df_8_40_test.to_csv(config_file, index=False)
     for processed_file, merge_file in zip(config_files, merged_files):
         if not os.path.isfile(merge_file):
             merge_data(processed_file, merge_file)
@@ -184,7 +268,7 @@ def write_best_config(config_files, run_number, mode):
             else:
                 if config_dict[phases[i]][config] > cycles[i]:
                     config_dict[phases[i]][config] = [cycles[i]]
-                #config_dict[phases[i]][config].append(cycles[i])
+                # config_dict[phases[i]][config].append(cycles[i])
 
     for phase in config_dict.keys():
         temp = min([config_dict[phase][key][0] for key in config_dict[phase].keys()])
@@ -200,11 +284,6 @@ def write_best_config(config_files, run_number, mode):
     config_df = pd.DataFrame(data=best_config)
     config_df.to_csv(path_or_buf='{}_{}/best_config_file.csv'.format(mode, run_number), index=False)
 
-
-
-
-
-
     # for phase in config_dict.keys():
     #     for config in config_dict[phase].keys():
     #         # config_dict[phase][config] = [min(config_dict[phase][config])]
@@ -215,12 +294,12 @@ def write_best_config(config_files, run_number, mode):
 
     # config_exists = os.path.isfile('train_{}/best_config_file.csv'.format(run_number))
     # if not config_exists:
-        # best_configuration = {'Phases': [], 'Best Configuration': []}
-        # for key in best_config.keys():
-        #     best_configuration['Phases'].append(key)
-        #     best_configuration['Best Configuration'].append(best_config[key][0])
-        # df_config = pd.DataFrame(data=best_configuration)
-        # df_config.to_csv(path_or_buf='train_{}/best_config_file.csv'.format(run_number), index=False)
+    # best_configuration = {'Phases': [], 'Best Configuration': []}
+    # for key in best_config.keys():
+    #     best_configuration['Phases'].append(key)
+    #     best_configuration['Best Configuration'].append(best_config[key][0])
+    # df_config = pd.DataFrame(data=best_configuration)
+    # df_config.to_csv(path_or_buf='train_{}/best_config_file.csv'.format(run_number), index=False)
 
 
 # def write_best_config(config_files, run_number):
@@ -257,7 +336,7 @@ def write_best_config(config_files, run_number, mode):
 #             best_config.close()
 
 
-def process_file(file, processing_file):
+def process_file(file, process_df):
     integers = np.array([])
     floating = np.array([])
     cntrl = np.array([])
@@ -341,10 +420,12 @@ def process_file(file, processing_file):
         feature6 = (branches_sum - jump_sum) / jump_sum
         feature7 = call_sum / cntrl_sum
     row = [file.name.strip(), feature1, feature2, feature3, cycles_sum, feature4, feature5, feature6, feature7, phase]
-    with open(processing_file, "a", newline='') as processed_file:
-        writer = csv.writer(processed_file)
-        writer.writerow(row)
-    processed_file.close()
+    # with open(processing_file, "a", newline='') as processed_file:
+    #     writer = csv.writer(processed_file)
+    #     writer.writerow(row)
+    # processed_file.close()
+    process_df = process_df.append(pd.Series(row, index=process_df.columns), ignore_index=True)
+    return process_df
 
 
 if __name__ == '__main__':
