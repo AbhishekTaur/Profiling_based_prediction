@@ -128,23 +128,29 @@ def main():
     write_best_config(merged_test_files, run_number, 'test')
 
 
+def return_dict():
+    return {'Filename': [], 'Normalized integer': [], 'Normalized floating': [], 'Normalized control': [], 'Cycles': [],
+            'Normalized time avg': [],
+            'Ratio Memory': [], 'Ratio branches': [], 'Ratio call': [], 'Phase': []}
+
+
 def create_data(config_files, listOfTrainFiles, merged_files, row, phase, run_number):
-    process_df_4_100_train = pd.DataFrame(columns=row)
-    process_df_4_80_train = pd.DataFrame(columns=row)
-    process_df_4_60_train = pd.DataFrame(columns=row)
-    process_df_4_40_train = pd.DataFrame(columns=row)
-    process_df_8_100_train = pd.DataFrame(columns=row)
-    process_df_8_80_train = pd.DataFrame(columns=row)
-    process_df_8_60_train = pd.DataFrame(columns=row)
-    process_df_8_40_train = pd.DataFrame(columns=row)
-    process_df_4_100_test = pd.DataFrame(columns=row)
-    process_df_4_80_test = pd.DataFrame(columns=row)
-    process_df_4_60_test = pd.DataFrame(columns=row)
-    process_df_4_40_test = pd.DataFrame(columns=row)
-    process_df_8_100_test = pd.DataFrame(columns=row)
-    process_df_8_80_test = pd.DataFrame(columns=row)
-    process_df_8_60_test = pd.DataFrame(columns=row)
-    process_df_8_40_test = pd.DataFrame(columns=row)
+    process_df_4_100_train = return_dict()
+    process_df_4_80_train = return_dict()
+    process_df_4_60_train = return_dict()
+    process_df_4_40_train = return_dict()
+    process_df_8_100_train = return_dict()
+    process_df_8_80_train = return_dict()
+    process_df_8_60_train = return_dict()
+    process_df_8_40_train = return_dict()
+    process_df_4_100_test = return_dict()
+    process_df_4_80_test = return_dict()
+    process_df_4_60_test = return_dict()
+    process_df_4_40_test = return_dict()
+    process_df_8_100_test = return_dict()
+    process_df_8_80_test = return_dict()
+    process_df_8_60_test = return_dict()
+    process_df_8_40_test = return_dict()
     exists = False
     for config, merge_file in zip(config_files, merged_files):
         exists = os.path.exists(config)
@@ -160,86 +166,86 @@ def create_data(config_files, listOfTrainFiles, merged_files, row, phase, run_nu
             file = open(elem, "r")
             if '4core-100cache' in file.name:
                 if phase == 'train':
-                    process_df_4_100_train = process_file(file, process_df_4_100_train)
+                    process_df_4_100_train = process_file(file, process_df_4_100_train, row)
                 else:
-                    process_df_4_100_test = process_file(file, process_df_4_100_test)
+                    process_df_4_100_test = process_file(file, process_df_4_100_test, row)
             if '4core-80cache' in file.name:
                 if phase == 'train':
-                    process_df_4_80_train = process_file(file, process_df_4_80_train)
+                    process_df_4_80_train = process_file(file, process_df_4_80_train, row)
                 else:
-                    process_df_4_80_test = process_file(file, process_df_4_80_test)
+                    process_df_4_80_test = process_file(file, process_df_4_80_test, row)
             if '4core-60cache' in file.name:
                 if phase == 'train':
-                    process_df_4_60_train = process_file(file, process_df_4_60_train)
+                    process_df_4_60_train = process_file(file, process_df_4_60_train, row)
                 else:
-                    process_df_4_60_test = process_file(file, process_df_4_60_test)
+                    process_df_4_60_test = process_file(file, process_df_4_60_test, row)
             if '4core-40cache' in file.name:
                 if phase == 'train':
-                    process_df_4_40_train = process_file(file, process_df_4_40_train)
+                    process_df_4_40_train = process_file(file, process_df_4_40_train, row)
                 else:
-                    process_df_4_40_test = process_file(file, process_df_4_40_test)
+                    process_df_4_40_test = process_file(file, process_df_4_40_test, row)
             if '8core-100cache' in file.name:
                 if phase == 'train':
-                    process_df_8_100_train = process_file(file, process_df_8_100_train)
+                    process_df_8_100_train = process_file(file, process_df_8_100_train, row)
                 else:
-                    process_df_8_100_test = process_file(file, process_df_8_100_test)
+                    process_df_8_100_test = process_file(file, process_df_8_100_test, row)
             if '8core-80cache' in file.name:
                 if phase == 'train':
-                    process_df_8_80_train = process_file(file, process_df_8_80_train)
+                    process_df_8_80_train = process_file(file, process_df_8_80_train, row)
                 else:
-                    process_df_8_80_test = process_file(file, process_df_8_80_test)
+                    process_df_8_80_test = process_file(file, process_df_8_80_test, row)
             if '8core-60cache' in file.name:
                 if phase == 'train':
-                    process_df_8_60_train = process_file(file, process_df_8_60_train)
+                    process_df_8_60_train = process_file(file, process_df_8_60_train, row)
                 else:
-                    process_df_8_60_test = process_file(file, process_df_8_60_test)
+                    process_df_8_60_test = process_file(file, process_df_8_60_test, row)
             if '8core-40cache' in file.name:
                 if phase == 'train':
-                    process_df_8_40_train = process_file(file, process_df_8_40_train)
+                    process_df_8_40_train = process_file(file, process_df_8_40_train, row)
                 else:
-                    process_df_8_40_test = process_file(file, process_df_8_40_test)
+                    process_df_8_40_test = process_file(file, process_df_8_40_test, row)
             file.close()
     for config_file in config_files:
         if '4_100' in config_file:
             if phase == 'train':
-                process_df_4_100_train.to_csv(config_file, index=False)
+                pd.DataFrame(data=process_df_4_100_train).to_csv(config_file, index=False)
             else:
-                process_df_4_100_test.to_csv(config_file, index=False)
+                pd.DataFrame(data=process_df_4_100_test).to_csv(config_file, index=False)
         if '4_80' in config_file:
             if phase == 'train':
-                process_df_4_80_train.to_csv(config_file, index=False)
+                pd.DataFrame(data=process_df_4_80_train).to_csv(config_file, index=False)
             else:
-                process_df_4_80_test.to_csv(config_file, index=False)
+                pd.DataFrame(data=process_df_4_80_test).to_csv(config_file, index=False)
         if '4_60' in config_file:
             if phase == 'train':
-                process_df_4_60_train.to_csv(config_file, index=False)
+                pd.DataFrame(data=process_df_4_60_train).to_csv(config_file, index=False)
             else:
-                process_df_4_60_test.to_csv(config_file, index=False)
+                pd.DataFrame(data=process_df_4_60_test).to_csv(config_file, index=False)
         if '4_40' in config_file:
             if phase == 'train':
-                process_df_4_40_train.to_csv(config_file, index=False)
+                pd.DataFrame(data=process_df_4_40_train).to_csv(config_file, index=False)
             else:
-                process_df_4_40_test.to_csv(config_file, index=False)
+                pd.DataFrame(data=process_df_4_40_test).to_csv(config_file, index=False)
         if '8_100' in config_file:
             if phase == 'train':
-                process_df_8_100_train.to_csv(config_file, index=False)
+                pd.DataFrame(data=process_df_8_100_train).to_csv(config_file, index=False)
             else:
-                process_df_8_100_test.to_csv(config_file, index=False)
+                pd.DataFrame(data=process_df_8_100_test).to_csv(config_file, index=False)
         if '8_80' in config_file:
             if phase == 'train':
-                process_df_8_80_train.to_csv(config_file, index=False)
+                pd.DataFrame(data=process_df_8_80_train).to_csv(config_file, index=False)
             else:
-                process_df_8_80_test.to_csv(config_file, index=False)
+                pd.DataFrame(data=process_df_8_80_test).to_csv(config_file, index=False)
         if '8_60' in config_file:
             if phase == 'train':
-                process_df_8_60_train.to_csv(config_file, index=False)
+                pd.DataFrame(data=process_df_8_60_train).to_csv(config_file, index=False)
             else:
-                process_df_8_60_test.to_csv(config_file, index=False)
+                pd.DataFrame(data=process_df_8_60_test).to_csv(config_file, index=False)
         if '8_40' in config_file:
             if phase == 'train':
-                process_df_8_40_train.to_csv(config_file, index=False)
+                pd.DataFrame(data=process_df_8_40_train).to_csv(config_file, index=False)
             else:
-                process_df_8_40_test.to_csv(config_file, index=False)
+                pd.DataFrame(data=process_df_8_40_test).to_csv(config_file, index=False)
     for processed_file, merge_file in zip(config_files, merged_files):
         if not os.path.isfile(merge_file):
             merge_data(processed_file, merge_file)
@@ -336,7 +342,7 @@ def write_best_config(config_files, run_number, mode):
 #             best_config.close()
 
 
-def process_file(file, process_df):
+def process_file(file, process_df, rows):
     integers = np.array([])
     floating = np.array([])
     cntrl = np.array([])
@@ -424,7 +430,9 @@ def process_file(file, process_df):
     #     writer = csv.writer(processed_file)
     #     writer.writerow(row)
     # processed_file.close()
-    process_df = process_df.append(pd.Series(row, index=process_df.columns), ignore_index=True)
+    # process_df = process_df.append(pd.Series(row, index=process_df.columns), ignore_index=True)
+    for r, i in zip(rows, row):
+        process_df[r].append(i)
     return process_df
 
 
