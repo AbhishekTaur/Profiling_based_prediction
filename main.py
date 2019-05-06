@@ -12,6 +12,9 @@ from sklearn.metrics import confusion_matrix
 from sklearn.metrics import accuracy_score
 from collections import Counter
 
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+print(device)
 
 lr = 0.1
 seq_length = 20
@@ -175,12 +178,12 @@ def validate(n, test_files, run_number, model):
             output = model(torch.Tensor(test_point).reshape(1, -1))
 
             test_output.append(np.argmax(output.detach().numpy(), axis=-1)[0])
-    print('run_number: ', run_number, ',test accuracy: ', np.sum(np.asarray(test_output) == np.asarray(y)) / y.size)
-    print("Frequency output: ", freq(test_output))
-    print("Frequency y: ", freq(y))
-    results = confusion_matrix(y, test_output)
-    print('Confusion Matrix :')
-    print(results)
+    # print('run_number: ', run_number, ',test accuracy: ', np.sum(np.asarray(test_output) == np.asarray(y)) / y.size)
+    # print("Frequency output: ", freq(test_output))
+    # print("Frequency y: ", freq(y))
+    # results = confusion_matrix(y, test_output)
+    # print('Confusion Matrix :')
+    # print(results)
     # print('Accuracy Score :', accuracy_score(y, test_output))
     return np.sum(test_output == np.asarray(y)) / y.size
 
@@ -247,14 +250,16 @@ def train(config_files, run_number, test_files):
         X, y = get_data_prev_n(n, config_files, run_number)
         input_size, hidden_size, output_size = X.shape[1], 8, 8
         model = MLP(input_size, hidden_size, output_size)
+        model.to(device)
+        X, y = X.to(device), y.to(device)
         epochs = 200
         accuracy = []
         test_accuracy = []
         for i in range(epochs):
             output_i, loss = train_optim(model, y, X)
-            print("epoch {}".format(i))
-            print("accuracy = ", np.sum(output_i == y.numpy()) / y.size())
-            print("loss: {}".format(loss))
+            # print("epoch {}".format(i))
+            # print("accuracy = ", np.sum(output_i == y.numpy()) / y.size())
+            # print("loss: {}".format(loss))
             accuracy.append((np.sum(output_i == y.numpy()) / y.size())[0])
             test_accuracy.append(validate(n, test_files, run_number, model))
 
