@@ -420,7 +420,7 @@ def process_file(file, process_df, rows):
     feature2 = floating_sum / 500000
     feature3 = cntrl_sum / 500000
     feature4 = time_avg / 4096
-    phase = file.name.split("\\")[-1].split("-")[-2]
+    phase = file.name.split("\\")[-1].split("-")[-3].split("::")[-1]
     if integers_sum > 0:
         feature5 = memory_sum / (integers_sum + floating_sum + cntrl_sum + logic_sum)
         feature6 = (branches_sum - jump_sum) / jump_sum

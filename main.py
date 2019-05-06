@@ -252,7 +252,7 @@ def train(config_files, run_number, test_files):
         model = MLP(input_size, hidden_size, output_size)
         model.to(device)
         X, y = X.to(device), y.to(device)
-        epochs = 200
+        epochs = 20
         accuracy = []
         test_accuracy = []
         for i in range(epochs):

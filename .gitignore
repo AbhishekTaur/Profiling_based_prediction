@@ -3,3 +3,4 @@
 /test_*
 /.idea
 /__pycache__
+nohup*
