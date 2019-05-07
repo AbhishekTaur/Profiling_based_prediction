@@ -262,6 +262,9 @@ def train(config_files, run_number, test_files):
             # print("loss: {}".format(loss))
             accuracy.append((np.sum(output_i == y.numpy()) / y.size())[0])
             test_accuracy.append(validate(n, test_files, run_number, model))
+            if not os.path.isdir('checkpoint'):
+                os.mkdir('checkpoint')
+            torch.save(model.state_dict(), "checkpoint/MLP_model_{0:03d}.pwf".format(i))
 
         x = np.arange(len(accuracy))
         plt.plot(x, accuracy)

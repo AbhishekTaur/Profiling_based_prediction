@@ -73,8 +73,8 @@ def main():
     # Get the list of all files in directory tree at given path
 
     subset = sample([i for i in range(5)], 4)
-    listOfTrainFiles = getListOfFiles(dirName, [0, 3], True)
-    listOfTestFiles = getListOfFiles(dirName, [0, 3], False)
+    listOfTrainFiles = getListOfFiles(dirName, [0], True)
+    listOfTestFiles = getListOfFiles(dirName, [0], False)
     run_number = str(randint(0, 10000))
     train_data_folder = 'train_{}'.format(run_number)
     test_data_folder = 'test_{}'.format(run_number)
