@@ -248,7 +248,7 @@ def train(config_files, run_number, test_files):
     max_validation_accuracy = []
     for n in range(0, 2):
         X, y = get_data_prev_n(n, config_files, run_number)
-        input_size, hidden_size, output_size = X.shape[1], 8, 8
+        input_size, hidden_size, output_size = X.shape[1], 16, 8
         model = MLP(input_size, hidden_size, output_size)
         model.to(device)
         X, y = X.to(device), y.to(device)
