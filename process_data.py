@@ -7,6 +7,8 @@ import pandas as pd
 from random import sample
 from random import randint
 from random import seed
+import pdb
+
 
 '''
     For the given path, get the List of all files in the directory tree 
@@ -22,6 +24,7 @@ def getListOfFiles(dirName, subset, train):
     # create a list of file and sub directories
     # names in the given directory
     listOfFile = os.listdir(dirName)
+    pdb.set_trace()
 
     allFiles = list()
     # Iterate over all the entries
