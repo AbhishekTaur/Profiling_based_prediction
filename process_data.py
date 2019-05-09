@@ -2,6 +2,7 @@ import os
 import numpy as np
 import csv
 import re
+import datetime
 import pandas as pd
 from random import sample
 from random import randint
@@ -11,7 +12,7 @@ from random import seed
     For the given path, get the List of all files in the directory tree 
 '''
 
-program_dict = {'blackscholes': 0, 'dedup': 1, 'streamcluster': 2, 'swaptions': 3, 'freqmine': 4, 'fluidanimate': 5}
+program_dict = {'blackscholes': 0, 'dedup': 1, 'streamcluster': 2, 'swaptions': 3, 'freqmine': 4, 'fluidanimate': 5, 'canneal': 6}
 
 seed(2)
 
@@ -67,65 +68,72 @@ def merge_data(processed_file, merged_file):
 
 
 def main():
-    dirName = '../data'
-    print("Starting the program")
+	start = datetime.datetime.now()
+	print("Start time: ", start)
+	dirName = '../data'
+	print("Starting the program")
 
     # Get the list of all files in directory tree at given path
 
-    subset = sample([i for i in range(5)], 4)
-    listOfTrainFiles = getListOfFiles(dirName, [0], True)
-    listOfTestFiles = getListOfFiles(dirName, [0], False)
-    run_number = str(randint(0, 10000))
-    train_data_folder = 'train_{}'.format(run_number)
-    test_data_folder = 'test_{}'.format(run_number)
-    if not os.path.exists(train_data_folder):
-        os.mkdir(test_data_folder)
-        os.mkdir(train_data_folder)
-        print("Created directories: {}".format(train_data_folder))
-        print("Created directories: {}".format(test_data_folder))
+	subset = sample([i for i in range(5)], 4)
+	listOfTrainFiles = getListOfFiles(dirName, subset, True)
+	listOfTestFiles = getListOfFiles(dirName, subset, False)
+	run_number = str(randint(0, 10000))
+	train_data_folder = 'train_{}'.format(run_number)
+	test_data_folder = 'test_{}'.format(run_number)
+	if not os.path.exists(train_data_folder):
+	    os.mkdir(test_data_folder)
+	    os.mkdir(train_data_folder)
+	    print("Created directories: {}".format(train_data_folder))
+	    print("Created directories: {}".format(test_data_folder))
 
-    row = ['Filename', 'Normalized integer', 'Normalized floating', 'Normalized control', 'Cycles',
-           'Normalized time avg',
-           'Ratio Memory', 'Ratio branches', 'Ratio call', 'Phase']
-    config_train_files = ['{}/processed_config_{}_4_40.csv'.format(train_data_folder, 'train'),
-                          '{}/processed_config_{}_4_60.csv'.format(train_data_folder, 'train'),
-                          '{}/processed_config_{}_4_80.csv'.format(train_data_folder, 'train'),
-                          '{}/processed_config_{}_4_100.csv'.format(train_data_folder, 'train'),
-                          '{}/processed_config_{}_8_40.csv'.format(train_data_folder, 'train'),
-                          '{}/processed_config_{}_8_60.csv'.format(train_data_folder, 'train'),
-                          '{}/processed_config_{}_8_80.csv'.format(train_data_folder, 'train'),
-                          '{}/processed_config_{}_8_100.csv'.format(train_data_folder, 'train')]
-    config_test_files = ['{}/processed_config_{}_4_40.csv'.format(test_data_folder, 'test'),
-                         '{}/processed_config_{}_4_60.csv'.format(test_data_folder, 'test'),
-                         '{}/processed_config_{}_4_80.csv'.format(test_data_folder, 'test'),
-                         '{}/processed_config_{}_4_100.csv'.format(test_data_folder, 'test'),
-                         '{}/processed_config_{}_8_40.csv'.format(test_data_folder, 'test'),
-                         '{}/processed_config_{}_8_60.csv'.format(test_data_folder, 'test'),
-                         '{}/processed_config_{}_8_80.csv'.format(test_data_folder, 'test'),
-                         '{}/processed_config_{}_8_100.csv'.format(test_data_folder, 'test')]
+	row = ['Filename', 'Normalized integer', 'Normalized floating', 'Normalized control', 'Cycles',
+	       'Normalized time avg',
+	       'Ratio Memory', 'Ratio branches', 'Ratio call', 'Phase']
+	config_train_files = ['{}/processed_config_{}_4_40.csv'.format(train_data_folder, 'train'),
+	                      '{}/processed_config_{}_4_60.csv'.format(train_data_folder, 'train'),
+	                      '{}/processed_config_{}_4_80.csv'.format(train_data_folder, 'train'),
+	                      '{}/processed_config_{}_4_100.csv'.format(train_data_folder, 'train'),
+	                      '{}/processed_config_{}_8_40.csv'.format(train_data_folder, 'train'),
+	                      '{}/processed_config_{}_8_60.csv'.format(train_data_folder, 'train'),
+	                      '{}/processed_config_{}_8_80.csv'.format(train_data_folder, 'train'),
+	                      '{}/processed_config_{}_8_100.csv'.format(train_data_folder, 'train')]
+	config_test_files = ['{}/processed_config_{}_4_40.csv'.format(test_data_folder, 'test'),
+	                     '{}/processed_config_{}_4_60.csv'.format(test_data_folder, 'test'),
+	                     '{}/processed_config_{}_4_80.csv'.format(test_data_folder, 'test'),
+	                     '{}/processed_config_{}_4_100.csv'.format(test_data_folder, 'test'),
+	                     '{}/processed_config_{}_8_40.csv'.format(test_data_folder, 'test'),
+	                     '{}/processed_config_{}_8_60.csv'.format(test_data_folder, 'test'),
+	                     '{}/processed_config_{}_8_80.csv'.format(test_data_folder, 'test'),
+	                     '{}/processed_config_{}_8_100.csv'.format(test_data_folder, 'test')]
 
-    merged_train_files = ['{}/merged_config_{}_4_40.csv'.format(train_data_folder, 'train'),
-                          '{}/merged_config_{}_4_60.csv'.format(train_data_folder, 'train'),
-                          '{}/merged_config_{}_4_80.csv'.format(train_data_folder, 'train'),
-                          '{}/merged_config_{}_4_100.csv'.format(train_data_folder, 'train'),
-                          '{}/merged_config_{}_8_40.csv'.format(train_data_folder, 'train'),
-                          '{}/merged_config_{}_8_60.csv'.format(train_data_folder, 'train'),
-                          '{}/merged_config_{}_8_80.csv'.format(train_data_folder, 'train'),
-                          '{}/merged_config_{}_8_100.csv'.format(train_data_folder, 'train')]
-    merged_test_files = ['{}/merged_config_{}_4_40.csv'.format(test_data_folder, 'test'),
-                         '{}/merged_config_{}_4_60.csv'.format(test_data_folder, 'test'),
-                         '{}/merged_config_{}_4_80.csv'.format(test_data_folder, 'test'),
-                         '{}/merged_config_{}_4_100.csv'.format(test_data_folder, 'test'),
-                         '{}/merged_config_{}_8_40.csv'.format(test_data_folder, 'test'),
-                         '{}/merged_config_{}_8_60.csv'.format(test_data_folder, 'test'),
-                         '{}/merged_config_{}_8_80.csv'.format(test_data_folder, 'test'),
-                         '{}/merged_config_{}_8_100.csv'.format(test_data_folder, 'test')]
-    # if not os.path.exists(train_data_folder):
-    create_data(config_train_files, listOfTrainFiles, merged_train_files, row, 'train', run_number)
-    create_data(config_test_files, listOfTestFiles, merged_test_files, row, 'test', run_number)
+	merged_train_files = ['{}/merged_config_{}_4_40.csv'.format(train_data_folder, 'train'),
+	                      '{}/merged_config_{}_4_60.csv'.format(train_data_folder, 'train'),
+	                      '{}/merged_config_{}_4_80.csv'.format(train_data_folder, 'train'),
+	                      '{}/merged_config_{}_4_100.csv'.format(train_data_folder, 'train'),
+	                      '{}/merged_config_{}_8_40.csv'.format(train_data_folder, 'train'),
+	                      '{}/merged_config_{}_8_60.csv'.format(train_data_folder, 'train'),
+	                      '{}/merged_config_{}_8_80.csv'.format(train_data_folder, 'train'),
+	                      '{}/merged_config_{}_8_100.csv'.format(train_data_folder, 'train')]
+	merged_test_files = ['{}/merged_config_{}_4_40.csv'.format(test_data_folder, 'test'),
+	                     '{}/merged_config_{}_4_60.csv'.format(test_data_folder, 'test'),
+	                     '{}/merged_config_{}_4_80.csv'.format(test_data_folder, 'test'),
+	                     '{}/merged_config_{}_4_100.csv'.format(test_data_folder, 'test'),
+	                     '{}/merged_config_{}_8_40.csv'.format(test_data_folder, 'test'),
+	                     '{}/merged_config_{}_8_60.csv'.format(test_data_folder, 'test'),
+	                     '{}/merged_config_{}_8_80.csv'.format(test_data_folder, 'test'),
+	                     '{}/merged_config_{}_8_100.csv'.format(test_data_folder, 'test')]
+	# if not os.path.exists(train_data_folder):
+	create_data(config_train_files, listOfTrainFiles, merged_train_files, row, 'train', run_number)
+	create_data(config_test_files, listOfTestFiles, merged_test_files, row, 'test', run_number)
 
-    write_best_config(merged_train_files, run_number, 'train')
-    write_best_config(merged_test_files, run_number, 'test')
+	write_best_config(merged_train_files, run_number, 'train')
+	write_best_config(merged_test_files, run_number, 'test')
+	end = datetime.datetime.now()
+	print("End time: ", end)
+	total_time = end - start
+	print("Total time in seconds: ", int(total_time.total_seconds()))
+
 
 
 def return_dict():
