@@ -7,8 +7,6 @@ import pandas as pd
 from random import sample
 from random import randint
 from random import seed
-import pdb
-
 
 '''
     For the given path, get the List of all files in the directory tree 
@@ -24,13 +22,9 @@ def getListOfFiles(dirName, subset, train):
     # create a list of file and sub directories
     # names in the given directory
     listOfFile = os.listdir(dirName)
-    pdb.set_trace()
-
     allFiles = list()
     # Iterate over all the entries
     for entry in listOfFile:
-        if entry == 'canneal':
-            print(entry)
         if dirName == '../data' and train and program_dict[entry] not in subset:
             continue
         if dirName == '../data' and not train and program_dict[entry] in subset:
@@ -79,9 +73,9 @@ def main():
 
     # Get the list of all files in directory tree at given path
 
-    subset = sample([i for i in range(5)], 4)
-    listOfTrainFiles = getListOfFiles(dirName, subset, True)
-    listOfTestFiles = getListOfFiles(dirName, subset, False)
+    subset = sample([i for i in range(6)], 5)
+    listOfTrainFiles = sorted(getListOfFiles(dirName, subset, True))
+    listOfTestFiles = sorted(getListOfFiles(dirName, subset, False))
     run_number = str(randint(0, 10000))
     train_data_folder = 'train_{}'.format(run_number)
     test_data_folder = 'test_{}'.format(run_number)
