@@ -1,6 +1,5 @@
 import os
 import numpy as np
-import csv
 import re
 import datetime
 import pandas as pd
@@ -8,30 +7,21 @@ from random import sample
 from random import randint
 from random import seed
 
-'''
-    For the given path, get the List of all files in the directory tree 
-'''
-
 program_dict = {'blackscholes': 0, 'dedup': 1, 'streamcluster': 2, 'swaptions': 3, 'freqmine': 4, 'fluidanimate': 5,
                 'canneal': 6}
 
-seed(2)
+seed(100)
 
 
 def getListOfFiles(dirName, subset, train):
-    # create a list of file and sub directories
-    # names in the given directory
     listOfFile = os.listdir(dirName)
     allFiles = list()
-    # Iterate over all the entries
     for entry in listOfFile:
         if dirName == '../data' and train and program_dict[entry] not in subset:
             continue
         if dirName == '../data' and not train and program_dict[entry] in subset:
             continue
-        # Create full path
         fullPath = os.path.join(dirName, entry)
-        # If entry is a directory then get the list of files in this directory
         if os.path.isdir(fullPath):
             allFiles = allFiles + getListOfFiles(fullPath, subset, train)
         else:
@@ -121,7 +111,6 @@ def main():
                          '{}/merged_config_{}_8_60.csv'.format(test_data_folder, 'test'),
                          '{}/merged_config_{}_8_80.csv'.format(test_data_folder, 'test'),
                          '{}/merged_config_{}_8_100.csv'.format(test_data_folder, 'test')]
-    # if not os.path.exists(train_data_folder):
     create_data(config_train_files, listOfTrainFiles, merged_train_files, row, 'train', run_number)
     create_data(config_test_files, listOfTestFiles, merged_test_files, row, 'test', run_number)
 
@@ -159,12 +148,6 @@ def create_data(config_files, listOfTrainFiles, merged_files, row, phase, run_nu
     exists = False
     for config, merge_file in zip(config_files, merged_files):
         exists = os.path.exists(config)
-        # if not exists:
-        #     with open(config, "w", newline='') as processed_file:
-        #         writer = csv.writer(processed_file)
-        #         writer.writerow(row)
-        #     processed_file.close()
-    folder = '{}{}{}'.format(phase, '_', run_number)
     if not exists:
         for elem in listOfTrainFiles:
 
@@ -279,7 +262,6 @@ def write_best_config(config_files, run_number, mode):
             else:
                 if config_dict[phases[i]][config] > cycles[i]:
                     config_dict[phases[i]][config] = [cycles[i]]
-                # config_dict[phases[i]][config].append(cycles[i])
 
     for phase in config_dict.keys():
         temp = min([config_dict[phase][key][0] for key in config_dict[phase].keys()])
@@ -294,57 +276,6 @@ def write_best_config(config_files, run_number, mode):
 
     config_df = pd.DataFrame(data=best_config)
     config_df.to_csv(path_or_buf='{}_{}/best_config_file.csv'.format(mode, run_number), index=False)
-
-    # for phase in config_dict.keys():
-    #     for config in config_dict[phase].keys():
-    #         # config_dict[phase][config] = [min(config_dict[phase][config])]
-    #         if len(best_config.keys()) == 0 or not phase in best_config.keys():
-    #             best_config[phase] = [config, config_dict[phase][config][0]]
-    #         elif best_config[phase][1] > config_dict[phase][config]:
-    #             best_config[phase] = [config, config_dict[phase][config][0]]
-
-    # config_exists = os.path.isfile('train_{}/best_config_file.csv'.format(run_number))
-    # if not config_exists:
-    # best_configuration = {'Phases': [], 'Best Configuration': []}
-    # for key in best_config.keys():
-    #     best_configuration['Phases'].append(key)
-    #     best_configuration['Best Configuration'].append(best_config[key][0])
-    # df_config = pd.DataFrame(data=best_configuration)
-    # df_config.to_csv(path_or_buf='train_{}/best_config_file.csv'.format(run_number), index=False)
-
-
-# def write_best_config(config_files, run_number):
-#     number_of_rows = getNumberofRows(config_files)
-#     data = np.zeros([8, number_of_rows], dtype=np.int)
-#     for config, j in zip(config_files, range(8)):
-#         df = pd.read_csv(config)
-#         for i in range(number_of_rows):
-#             data[j:j + 1, i:i + 1] = df.get('Cycles')[i]
-#     config_exists = os.path.isfile('train_{}/best_config_file.csv'.format(run_number))
-#     if not config_exists:
-#         with open('train_{}/best_config_file.csv'.format(run_number), "w", newline="") as best_config:
-#             writer = csv.writer(best_config)
-#             writer.writerow(['Best Configuration', 'Previous Best Configuration'])
-#         best_config.close()
-#
-#         for i in range(number_of_rows):
-#             cycles_arr = np.array(
-#                 [data[0:1, i:i + 1][0][0], data[1:2, i:i + 1][0][0], data[2:3, i:i + 1][0][0], data[3:4, i:i + 1][0][0],
-#                  data[4:5, i:i + 1][0][0], data[5:6, i:i + 1][0][0], data[6:7, i:i + 1][0][0],
-#                  data[7:8, i:i + 1][0][0]])
-#             sorted_cycles_arr = sorted(cycles_arr)
-#             with open("train_{}/best_config_file.csv".format(run_number), "a", newline="") as best_config:
-#                 writer = csv.writer(best_config)
-#                 print(cycles_arr)
-#
-#                 print(np.where(cycles_arr == sorted(cycles_arr)[-2])[0][0])
-#                 if sorted_cycles_arr[0] == sorted_cycles_arr[1]:
-#                     best_configs = [l for l, k in enumerate(cycles_arr) if k == min(cycles_arr)]
-#                     writer.writerow([best_configs[0], best_configs[1]])
-#                 else:
-#                     writer.writerow([np.where(cycles_arr == sorted_cycles_arr[0])[0][0],
-#                                      np.where(cycles_arr == sorted_cycles_arr[1])[0][0]])
-#             best_config.close()
 
 
 def process_file(file, process_df, rows):
@@ -431,11 +362,6 @@ def process_file(file, process_df, rows):
         feature6 = (branches_sum - jump_sum) / jump_sum
         feature7 = call_sum / cntrl_sum
     row = [file.name.strip(), feature1, feature2, feature3, cycles_sum, feature4, feature5, feature6, feature7, phase]
-    # with open(processing_file, "a", newline='') as processed_file:
-    #     writer = csv.writer(processed_file)
-    #     writer.writerow(row)
-    # processed_file.close()
-    # process_df = process_df.append(pd.Series(row, index=process_df.columns), ignore_index=True)
     for r, i in zip(rows, row):
         process_df[r].append(i)
     return process_df

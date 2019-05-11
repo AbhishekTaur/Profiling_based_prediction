@@ -8,8 +8,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import os
 import re
-from sklearn.metrics import confusion_matrix
-from sklearn.metrics import accuracy_score
 from collections import Counter
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -61,40 +59,52 @@ def getConfigFilesList(dirName, inside, run_number, dict_t, phase):
                 dict_t[run_number].append(fullPath)
 
 
-def get_data_prev_n(n, config_files, run_number):
+def get_data(config_files, n, run_number, test_files):
     data_X = []
     y_onehot_list = []
-    df_y = pd.read_csv('train_{}/best_config_file.csv'.format(run_number))
+    df_train_y = pd.read_csv('train_{}/best_config_file.csv'.format(run_number))
+    df_test_y = pd.read_csv('test_{}/best_config_file.csv'.format(run_number))
+    df_y = pd.concat([df_train_y, df_test_y])
     if n > 0:
         y_onehot = oneHotEncoding(df_y.get('Best Configuration').values)[:-n]
         y_onehot = np.vstack((np.zeros(shape=(n, 8), dtype=np.int), y_onehot))
     else:
         y_onehot = pd.get_dummies(df_y.get('Best Configuration')).values[:]
-    for config, j in zip(config_files, range(len(config_files))):
+    for config, test_file, j in zip(config_files, test_files, range(len(config_files))):
         df = pd.read_csv(config, usecols=features).values
+        df_test = pd.read_csv(test_file, usecols=features).values
         data_X.append(df)
+        data_X.append(df_test)
 
         y_onehot_list.append(y_onehot)
     data_X = np.vstack(tuple(data_X))
     data_Y = df_y.get('Best Configuration').values
     if n > 0:
         data_X = np.hstack((data_X, y_onehot))
-
     scaler = MinMaxScaler()
     scaler.fit(data_X)
     data_X = scaler.transform(data_X)
-    # p = np.random.permutation(len(data_X))
-    # X = torch.Tensor(data_X[p])
-    # y = torch.Tensor(data_Y[p].ravel())
-    # indexes = parse_indexes(data_Y)
-    # np.random.shuffle(data_X[indexes])
-    # np.random.shuffle(data_Y[indexes].ravel())
-    # X = torch.Tensor(data_X[indexes])
-    # y = torch.Tensor(data_Y[indexes].ravel())
-    np.random.shuffle(data_X)
-    np.random.shuffle(data_Y)
+    return data_X, data_Y
+
+
+def get_data_prev_n(n, config_files, run_number, test_files):
+    data_X, data_Y = get_data(config_files, n, run_number, test_files)
+    train_size = int(len(data_X)*0.8)
+    data_X = data_X[0:train_size]
+    data_Y = data_Y[0:train_size]
     X = torch.Tensor(data_X)
     y = torch.Tensor(data_Y.ravel())
+
+    return X, y
+
+
+def get_data_test(n, config_files, run_number, test_files):
+    data_X, data_Y = get_data(config_files, n, run_number, test_files)
+    data_X = data_X[int(len(data_X) * 0.8):]
+    data_Y = data_Y[int(len(data_Y)*0.8):]
+    X = torch.Tensor(data_X)
+    y = torch.Tensor(data_Y.ravel())
+
     return X, y
 
 
@@ -145,8 +155,6 @@ def train_optim(model, label, input):
     predictions = []
     losses = []
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
-    # print("Minumum: ", np.min(input.numpy(), axis=1))
-    # print("Maximum: ", np.max(input.numpy(), axis=1))
     for i in range(0, input.size()[0], batch_size):
         optimizer.zero_grad()
         criterion = nn.NLLLoss()
@@ -162,30 +170,19 @@ def train_optim(model, label, input):
     return np.hstack(tuple(predictions)), np.mean(np.array(losses))
 
 
-def validate(n, test_files, run_number, model):
-    X, y, one_hot = get_validation_data(n, test_files, run_number)
+def validate(n, config_files, test_files, run_number, model):
+    X, y = get_data_test(n, config_files, run_number, test_files)
     test_output = []
     with torch.no_grad():
         for i in range(len(X)):
-            test_point = X[i].ravel()
-            if i == 0:
-                if n > 0:
-                    test_point = np.hstack((test_point.reshape(1, test_point.shape[0]), np.zeros(shape=(1, 8))))
-            else:
-                if n > 0:
-                    test_point = np.hstack((test_point.reshape(1, test_point.shape[0]), oneHotEncoding([test_output[-1]])))
-
-            output = model(torch.Tensor(test_point).reshape(1, -1))
+            test_point = X[i]
+            output = model(test_point.reshape(1, -1))
 
             test_output.append(np.argmax(output.detach().numpy(), axis=-1)[0])
-    # print('run_number: ', run_number, ',test accuracy: ', np.sum(np.asarray(test_output) == np.asarray(y)) / y.size)
-    # print("Frequency output: ", freq(test_output))
-    # print("Frequency y: ", freq(y))
-    # results = confusion_matrix(y, test_output)
-    # print('Confusion Matrix :')
-    # print(results)
-    # print('Accuracy Score :', accuracy_score(y, test_output))
-    return np.sum(test_output == np.asarray(y)) / y.size
+    print('run_number: ', run_number, ',test accuracy: ', np.sum(np.asarray(test_output) == np.asarray(y)) / len(y))
+    print("Frequency output: ", freq(np.array(test_output, dtype=int)))
+    print("Frequency y: ", freq(np.array(y, dtype=int)))
+    return np.sum(np.array(test_output).reshape(-1, 1) == np.array(y, dtype=int).reshape(-1, 1)) / len(y)
 
 
 def main():
@@ -247,7 +244,7 @@ def train(config_files, run_number, test_files):
     max_accuracy = []
     max_validation_accuracy = []
     for n in range(0, 2):
-        X, y = get_data_prev_n(n, config_files, run_number)
+        X, y = get_data_prev_n(n, config_files, run_number, test_files)
         input_size, hidden_size, output_size = X.shape[1], 16, 8
         model = MLP(input_size, hidden_size, output_size)
         model.to(device)
@@ -257,11 +254,11 @@ def train(config_files, run_number, test_files):
         test_accuracy = []
         for i in range(epochs):
             output_i, loss = train_optim(model, y, X)
-            # print("epoch {}".format(i))
-            # print("accuracy = ", np.sum(output_i == y.numpy()) / y.size())
-            # print("loss: {}".format(loss))
+            print("epoch {}".format(i))
+            print("accuracy = ", np.sum(output_i == y.numpy()) / y.size())
+            print("loss: {}".format(loss))
             accuracy.append((np.sum(output_i == y.numpy()) / y.size())[0])
-            test_accuracy.append(validate(n, test_files, run_number, model))
+            test_accuracy.append(validate(n, config_files, test_files, run_number, model))
             if not os.path.isdir('checkpoint'):
                 os.mkdir('checkpoint')
             torch.save(model.state_dict(), "checkpoint/MLP_model_{0:03d}.pwf".format(i))
