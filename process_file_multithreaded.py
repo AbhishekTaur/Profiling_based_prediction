@@ -33,7 +33,7 @@ def getFiles(benchmark, dirName):
     for root, dirs, files in os.walk(dirName):
         if len(dirs) == 0 and benchmark in root:
             benchmark_files[benchmark] = benchmark_files[benchmark] + [os.path.join(root, file) for file in files]
-    return sorted(benchmark_files[benchmark])
+    benchmark_files[benchmark] = sorted(benchmark_files[benchmark])
 
 
 def getLeastNumberOfRows(merge_dict):
@@ -279,6 +279,7 @@ def main():
     print("End time: ", end)
     total_time = end - start
     print("Total time in seconds: ", int(total_time.total_seconds()))
+
 
 if __name__ == '__main__':
     main()
