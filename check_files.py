@@ -16,3 +16,7 @@ def main():
         getFiles(benchmark, '../data')
         file = open(benchmark + '.txt')
         file.write(benchmark_files[benchmark])
+
+
+if __name__=='__main__':
+    main()
