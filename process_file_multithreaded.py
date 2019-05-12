@@ -275,7 +275,10 @@ def main():
 
     write_best_config(merged_train_files, run_number, 'train')
     write_best_config(merged_test_files, run_number, 'test')
-
+    end = datetime.datetime.now()
+    print("End time: ", end)
+    total_time = end - start
+    print("Total time in seconds: ", int(total_time.total_seconds()))
 
 if __name__ == '__main__':
     main()
