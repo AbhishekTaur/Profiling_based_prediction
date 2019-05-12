@@ -6,3 +6,4 @@
 nohup*
 *.log
 /checkpoint/*
+/benchmark_files

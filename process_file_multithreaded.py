@@ -119,6 +119,7 @@ def main():
     print(train_subset)
     train_data_folder = 'train_{}'.format(run_number)
     test_data_folder = 'test_{}'.format(run_number)
+    benchmark_folder = 'benchmark_files'
     if not os.path.exists(train_data_folder):
         os.mkdir(test_data_folder)
         os.mkdir(train_data_folder)
@@ -139,15 +140,28 @@ def main():
     benchmarks = [blackscholes, dedup, streamcluster, swaptions, freqmine, fluidanimate, canneal]
     threads = list()
 
-    for benchmark in benchmarks:
-        x = threading.Thread(target=benchmark.process_files())
-        threads.append(x)
-        x.start()
+    if not os.path.exists(benchmark_folder):
+        os.mkdir(benchmark_folder)
+        for benchmark in benchmarks:
+            x = threading.Thread(target=benchmark.process_files())
+            threads.append(x)
+            x.start()
 
-    for index, thread in enumerate(threads):
-        logging.info("Main    : before joining thread %d.", index)
-        thread.join()
-        logging.info("Main    : thread %d done", index)
+        for index, thread in enumerate(threads):
+            logging.info("Main    : before joining thread %d.", index)
+            thread.join()
+            logging.info("Main    : thread %d done", index)
+
+        for benchmark, benchmark_name in zip(benchmarks, benchmark_files.keys()):
+            if benchmark_name in train_subset:
+                pd.DataFrame(benchmark.process_dict).to_csv(
+                    path_or_buf='{}/{}.csv'.format(benchmark_folder, benchmark_name), index=False)
+            if benchmark_name in test_subset:
+                pd.DataFrame(benchmark.process_dict).to_csv(
+                    path_or_buf='{}/{}.csv'.format(benchmark_folder, benchmark_name), index=False)
+    else:
+        for benchmark, benchmark_name in zip(benchmarks, benchmark_files.keys()):
+            benchmark.process_dict = pd.read_csv('{}/{}.csv'.format(benchmark_folder, benchmark_name)).to_dict()
 
     process_df_4_100_train = pd.DataFrame(data=return_dict())
     process_df_4_80_train = pd.DataFrame(data=return_dict())
@@ -165,14 +179,6 @@ def main():
     process_df_8_80_test = pd.DataFrame(data=return_dict())
     process_df_8_60_test = pd.DataFrame(data=return_dict())
     process_df_8_40_test = pd.DataFrame(data=return_dict())
-
-    for benchmark, benchmark_name in zip(benchmarks, benchmark_files.keys()):
-        if benchmark_name in train_subset:
-            pd.DataFrame(benchmark.process_dict).to_csv(
-                path_or_buf='{}/{}.csv'.format(train_data_folder, benchmark_name), index=False)
-        if benchmark_name in test_subset:
-            pd.DataFrame(benchmark.process_dict).to_csv(
-                path_or_buf='{}/{}.csv'.format(test_data_folder, benchmark_name), index=False)
 
     for config in config_files:
         for benchmark, benchmark_name in zip(benchmarks, benchmark_files.keys()):
