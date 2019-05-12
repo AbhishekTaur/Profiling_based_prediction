@@ -14,8 +14,8 @@ def getFiles(benchmark, dirName):
 def main():
     for benchmark in benchmark_files.keys():
         getFiles(benchmark, '../data')
-        file = open(benchmark + '.txt')
-        file.write(benchmark_files[benchmark])
+        file = open(benchmark + '.txt', 'w')
+        file.write(str(benchmark_files[benchmark]))
 
 
 if __name__=='__main__':
