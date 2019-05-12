@@ -104,7 +104,6 @@ def main():
     subset = sample([i for i in range(6)], 5)
     run_number = str(randint(0, 10000))
     print(subset)
-    subset = [0]
     train_subset = []
     test_subset = []
     for benchmark in benchmark_files.keys():
