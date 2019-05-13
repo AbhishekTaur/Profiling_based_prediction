@@ -30,7 +30,6 @@ def getFiles(benchmark, dirName):
     for root, dirs, files in os.walk(dirName):
         if len(dirs) == 0 and benchmark in root:
             benchmark_files[benchmark] = benchmark_files[benchmark] + [os.path.join(root, file) for file in files]
-    benchmark_files[benchmark] = sorted(benchmark_files[benchmark])
 
 
 def getLeastNumberOfRows(merge_dict):
@@ -150,12 +149,8 @@ def main():
             logging.info("Main    : thread %d done", index)
 
         for benchmark, benchmark_name in zip(benchmarks, benchmark_files.keys()):
-            if benchmark_name in train_subset:
-                pd.DataFrame(benchmark.process_dict).to_csv(
-                    path_or_buf='{}/{}.csv'.format(benchmark_folder, benchmark_name), index=False)
-            if benchmark_name in test_subset:
-                pd.DataFrame(benchmark.process_dict).to_csv(
-                    path_or_buf='{}/{}.csv'.format(benchmark_folder, benchmark_name), index=False)
+            df = pd.DataFrame(benchmark.process_dict).sort_values('Filename')
+            df.to_csv(path_or_buf='{}/{}.csv'.format(benchmark_folder, benchmark_name), index=False)
     else:
         for benchmark, benchmark_name in zip(benchmarks, benchmark_files.keys()):
             benchmark.process_dict = pd.read_csv('{}/{}.csv'.format(benchmark_folder, benchmark_name)).to_dict()
