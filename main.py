@@ -94,8 +94,8 @@ def get_data_prev_n(n, config_files, run_number):
     return X, y
 
 
-def get_data_test(n, config_files, run_number, test_files):
-    data_X, data_Y = get_data(config_files, n, run_number, test_files)
+def get_data_test(n, config_files, run_number):
+    data_X, data_Y = get_data(config_files, n, run_number)
     data_X = data_X[int(len(data_X) * 0.8):]
     data_Y = data_Y[int(len(data_Y)*0.8):]
     X = torch.Tensor(data_X)
