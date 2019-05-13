@@ -20,7 +20,6 @@ process_row = ['Filename', 'Normalized integer', 'Normalized floating', 'Normali
 config_files = ['4core-100', '4core-80', '4core-60', '4core-40', '8core-100', '8core-80', '8core-60', '8core-40']
 
 
-
 def return_dict():
     return {'Filename': [], 'Normalized integer': [], 'Normalized floating': [], 'Normalized control': [], 'Cycles': [],
             'Normalized time avg': [],
