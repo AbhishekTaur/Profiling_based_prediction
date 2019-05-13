@@ -59,7 +59,7 @@ def getConfigFilesList(dirName, inside, run_number, dict_t, phase):
                 dict_t[run_number].append(fullPath)
 
 
-def get_data(config_files, n, run_number, test_files):
+def get_data(config_files, n, run_number):
     data_X = []
     y_onehot_list = []
     df_y = pd.read_csv('train_{}/best_config_file.csv'.format(run_number))
@@ -68,7 +68,7 @@ def get_data(config_files, n, run_number, test_files):
         y_onehot = np.vstack((np.zeros(shape=(n, 8), dtype=np.int), y_onehot))
     else:
         y_onehot = pd.get_dummies(df_y.get('Best Configuration')).values[:]
-    for config, test_file, j in zip(config_files, test_files, range(len(config_files))):
+    for config, j in zip(config_files, range(len(config_files))):
         df = pd.read_csv(config, usecols=features).values
         data_X.append(df)
 
@@ -83,8 +83,8 @@ def get_data(config_files, n, run_number, test_files):
     return data_X, data_Y
 
 
-def get_data_prev_n(n, config_files, run_number, test_files):
-    data_X, data_Y = get_data(config_files, n, run_number, test_files)
+def get_data_prev_n(n, config_files, run_number):
+    data_X, data_Y = get_data(config_files, n, run_number)
     train_size = int(len(data_X)*0.8)
     data_X = data_X[0:train_size]
     data_Y = data_Y[0:train_size]
@@ -166,8 +166,8 @@ def train_optim(model, label, input):
     return np.hstack(tuple(predictions)), np.mean(np.array(losses))
 
 
-def validate(n, config_files, test_files, run_number, model):
-    X, y = get_data_test(n, config_files, run_number, test_files)
+def validate(n, config_files, run_number, model):
+    X, y = get_data_test(n, config_files, run_number)
     test_output = []
     with torch.no_grad():
         for i in range(len(X)):
@@ -184,11 +184,9 @@ def validate(n, config_files, test_files, run_number, model):
 def main():
     [os.remove(os.path.join(".", f)) for f in os.listdir(".") if f.endswith(".png")]
     train_dict = {}
-    test_dict = {}
     getConfigFilesList('.', False, 0, train_dict, 'train')
-    getConfigFilesList('.', False, 0, test_dict, 'test')
     for key in train_dict.keys():
-        train(train_dict[key], key, test_dict[key])
+        train(train_dict[key], key)
 
 
 def plot_output_epoch(output, i, n):
@@ -236,11 +234,11 @@ def parse_indexes(list1):
     return index_list
 
 
-def train(config_files, run_number, test_files):
+def train(config_files, run_number):
     max_accuracy = []
     max_validation_accuracy = []
     for n in range(0, 2):
-        X, y = get_data_prev_n(n, config_files, run_number, test_files)
+        X, y = get_data_prev_n(n, config_files, run_number)
         input_size, hidden_size, output_size = X.shape[1], 16, 8
         model = MLP(input_size, hidden_size, output_size)
         model.to(device)
@@ -254,7 +252,7 @@ def train(config_files, run_number, test_files):
             print("accuracy = ", np.sum(output_i == y.numpy()) / y.size())
             print("loss: {}".format(loss))
             accuracy.append((np.sum(output_i == y.numpy()) / y.size())[0])
-            test_accuracy.append(validate(n, config_files, test_files, run_number, model))
+            test_accuracy.append(validate(n, config_files, run_number, model))
             if not os.path.isdir('checkpoint'):
                 os.mkdir('checkpoint')
             torch.save(model.state_dict(), "checkpoint/MLP_model_{0:03d}.pwf".format(i))
