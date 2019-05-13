@@ -1,7 +1,6 @@
 import os
 import datetime
 from random import sample
-from random import seed
 from random import randint
 import threading
 import logging
@@ -20,7 +19,6 @@ process_row = ['Filename', 'Normalized integer', 'Normalized floating', 'Normali
 
 config_files = ['4core-100', '4core-80', '4core-60', '4core-40', '8core-100', '8core-80', '8core-60', '8core-40']
 
-seed(100)
 
 
 def return_dict():

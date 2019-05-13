@@ -62,9 +62,7 @@ def getConfigFilesList(dirName, inside, run_number, dict_t, phase):
 def get_data(config_files, n, run_number, test_files):
     data_X = []
     y_onehot_list = []
-    df_train_y = pd.read_csv('train_{}/best_config_file.csv'.format(run_number))
-    df_test_y = pd.read_csv('test_{}/best_config_file.csv'.format(run_number))
-    df_y = pd.concat([df_train_y, df_test_y])
+    df_y = pd.read_csv('train_{}/best_config_file.csv'.format(run_number))
     if n > 0:
         y_onehot = oneHotEncoding(df_y.get('Best Configuration').values)[:-n]
         y_onehot = np.vstack((np.zeros(shape=(n, 8), dtype=np.int), y_onehot))
@@ -72,9 +70,7 @@ def get_data(config_files, n, run_number, test_files):
         y_onehot = pd.get_dummies(df_y.get('Best Configuration')).values[:]
     for config, test_file, j in zip(config_files, test_files, range(len(config_files))):
         df = pd.read_csv(config, usecols=features).values
-        df_test = pd.read_csv(test_file, usecols=features).values
         data_X.append(df)
-        data_X.append(df_test)
 
         y_onehot_list.append(y_onehot)
     data_X = np.vstack(tuple(data_X))
