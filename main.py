@@ -156,7 +156,7 @@ def train_optim(model, label, input):
         criterion = nn.NLLLoss()
 
         predicted = model(input[i:i + batch_size])
-        predictions.append(np.argmax(predicted.detach().numpy(), axis=-1))
+        predictions.append(np.argmax(predicted.detach().cpu().numpy(), axis=-1))
 
         loss = criterion(predicted, label[i:i + batch_size])
         loss.backward()
@@ -168,17 +168,18 @@ def train_optim(model, label, input):
 
 def validate(n, config_files, run_number, model):
     X, y = get_data_test(n, config_files, run_number)
+    X = X.to(device)
+    y = y.to(device)
     test_output = []
     with torch.no_grad():
         for i in range(len(X)):
             test_point = X[i]
             output = model(test_point.reshape(1, -1))
-
-            test_output.append(np.argmax(output.detach().numpy(), axis=-1)[0])
-    print('run_number: ', run_number, ',test accuracy: ', np.sum(np.asarray(test_output) == np.asarray(y)) / len(y))
+            test_output.append(np.argmax(output.detach().cpu().numpy(), axis=-1)[0])
+    print('run_number: ', run_number, ',test accuracy: ', np.sum(np.asarray(test_output) == np.asarray(y.cpu())) / len(y))
     print("Frequency output: ", freq(np.array(test_output, dtype=int)))
-    print("Frequency y: ", freq(np.array(y, dtype=int)))
-    return np.sum(np.array(test_output).reshape(-1, 1) == np.array(y, dtype=int).reshape(-1, 1)) / len(y)
+    print("Frequency y: ", freq(np.array(y.cpu(), dtype=int)))
+    return np.sum(np.array(test_output).reshape(-1, 1) == np.array(y.cpu(), dtype=int).reshape(-1, 1)) / len(y)
 
 
 def main():
@@ -249,9 +250,9 @@ def train(config_files, run_number):
         for i in range(epochs):
             output_i, loss = train_optim(model, y, X)
             print("epoch {}".format(i))
-            print("accuracy = ", np.sum(output_i == y.numpy()) / y.size())
+            print("accuracy = ", np.sum(output_i == y.cpu().numpy()) / y.size())
             print("loss: {}".format(loss))
-            accuracy.append((np.sum(output_i == y.numpy()) / y.size())[0])
+            accuracy.append((np.sum(output_i == y.cpu().numpy()) / y.size())[0])
             test_accuracy.append(validate(n, config_files, run_number, model))
             if not os.path.isdir('checkpoint'):
                 os.mkdir('checkpoint')
