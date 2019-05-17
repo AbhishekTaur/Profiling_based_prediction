@@ -5,5 +5,4 @@
 /__pycache__
 nohup*
 *.log
-/checkpoint/*
 /benchmark_files
