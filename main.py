@@ -250,7 +250,7 @@ def parse_indexes(list1):
 def train(config_files, run_number):
     max_accuracy = []
     max_validation_accuracy = []
-    for n in range(0, 2):
+    for n in range(1, 2):
         X, y = get_data_prev_n(n, config_files, run_number)
         input_size, hidden_size, output_size = X.shape[1], 16, 8
         model = MLP(input_size, hidden_size, output_size)
