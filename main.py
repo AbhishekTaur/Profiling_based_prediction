@@ -59,7 +59,7 @@ def getConfigFilesList(dirName, inside, run_number, dict_t, phase):
                 dict_t[run_number].append(fullPath)
 
 
-def get_data(config_files, n, run_number):
+def get_data(config_files, n, run_number, phase):
     data_X = []
     y_onehot_list = []
     df_y = pd.read_csv('train_{}/best_config_file.csv'.format(run_number))
@@ -79,12 +79,24 @@ def get_data(config_files, n, run_number):
         data_X = np.hstack((data_X, y_onehot))
     scaler = MinMaxScaler()
     scaler.fit(data_X)
+    if phase == 'train':
+        if not os.path.exists('scaler_train.txt'):
+            with open('scaler_train.txt', 'w') as scaler_file:
+                scaler_file.write('To get original data_x use: (data - min)/scale and do it feature wise\n')
+                scaler_file.write('scale: ' + str(scaler.scale_) + '\n')
+                scaler_file.write('min:' + str(scaler.min_) + '\n')
+    if phase == 'validate':
+        if not os.path.exists('scaler_validate.txt'):
+            with open('scaler_validate.txt', 'w') as scaler_file:
+                scaler_file.write('To get original data_x use: (data - min)/scale and do it feature wise\n')
+                scaler_file.write('scale: ' + str(scaler.scale_) + '\n')
+                scaler_file.write('min:' + str(scaler.min_) + '\n')
     data_X = scaler.transform(data_X)
     return data_X, data_Y
 
 
 def get_data_prev_n(n, config_files, run_number):
-    data_X, data_Y = get_data(config_files, n, run_number)
+    data_X, data_Y = get_data(config_files, n, run_number, 'train')
     train_size = int(len(data_X)*0.8)
     data_X = data_X[0:train_size]
     data_Y = data_Y[0:train_size]
@@ -95,7 +107,7 @@ def get_data_prev_n(n, config_files, run_number):
 
 
 def get_data_test(n, config_files, run_number):
-    data_X, data_Y = get_data(config_files, n, run_number)
+    data_X, data_Y = get_data(config_files, n, run_number, 'validate')
     data_X = data_X[int(len(data_X) * 0.8):]
     data_Y = data_Y[int(len(data_Y)*0.8):]
     X = torch.Tensor(data_X)
@@ -253,10 +265,11 @@ def train(config_files, run_number):
             print("accuracy = ", np.sum(output_i == y.cpu().numpy()) / y.size())
             print("loss: {}".format(loss))
             accuracy.append((np.sum(output_i == y.cpu().numpy()) / y.size())[0])
-            test_accuracy.append(validate(n, config_files, run_number, model))
             if not os.path.isdir('checkpoint'):
                 os.mkdir('checkpoint')
-            torch.save(model.state_dict(), "checkpoint/MLP_model_{0:03d}.pwf".format(i))
+            torch.save(model.state_dict(), "checkpoint/MLP_model_{0:03d}_train.pwf".format(i))
+            test_accuracy.append(validate(n, config_files, run_number, model))
+            torch.save(model.state_dict(), "checkpoint/MLP_model_{0:03d}_validate.pwf".format(i))
 
         x = np.arange(len(accuracy))
         plt.plot(x, accuracy)
