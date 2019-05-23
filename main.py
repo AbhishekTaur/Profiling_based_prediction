@@ -14,12 +14,6 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 print(device)
 
-lr = 0.1
-seq_length = 20
-data_time_steps = np.linspace(2, 100, seq_length + 1)
-data = (np.sin(data_time_steps) * 5 + 5).astype(int)
-data.resize((seq_length + 1, 1))
-
 features = ['Normalized integer', 'Normalized floating', 'Normalized control', 'Normalized time avg',
             'Ratio Memory', 'Ratio branches', 'Ratio call']
 
@@ -77,21 +71,6 @@ def get_data(config_files, n, run_number, phase):
     data_Y = df_y.get('Best Configuration').values
     if n > 0:
         data_X = np.hstack((data_X, y_onehot))
-    scaler = MinMaxScaler()
-    scaler.fit(data_X)
-    if phase == 'train':
-        if not os.path.exists('scaler_train.txt'):
-            with open('scaler_train.txt', 'w') as scaler_file:
-                scaler_file.write('To get original data_x use: (data - min)/scale and do it feature wise\n')
-                scaler_file.write('scale: ' + str(scaler.scale_) + '\n')
-                scaler_file.write('min:' + str(scaler.min_) + '\n')
-    if phase == 'validate':
-        if not os.path.exists('scaler_validate.txt'):
-            with open('scaler_validate.txt', 'w') as scaler_file:
-                scaler_file.write('To get original data_x use: (data - min)/scale and do it feature wise\n')
-                scaler_file.write('scale: ' + str(scaler.scale_) + '\n')
-                scaler_file.write('min:' + str(scaler.min_) + '\n')
-    data_X = scaler.transform(data_X)
     return data_X, data_Y
 
 

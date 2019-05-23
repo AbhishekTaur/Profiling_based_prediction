@@ -6,3 +6,5 @@
 nohup*
 *.log
 /benchmark_files
+profiling_results
+profiling_results_main
