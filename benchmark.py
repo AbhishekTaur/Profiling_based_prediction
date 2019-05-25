@@ -36,6 +36,7 @@ class Benchmark:
             feature6 = 0
             feature7 = 0
             timeSeries = False
+            Global = False
             for line in file:
                 if timeSeries and "BlockSize = " in line:
                     timeSeries = False
@@ -43,8 +44,12 @@ class Benchmark:
                     time_data = np.append(time_data, int(line.split(" ")[1]))
                 if "Busy stats" in line:
                     timeSeries = True
+                if "[ Global ]" in line:
+                    Global = True
+                if "[ Core 0 ]" in line:
+                    break
 
-                if " = " in line:
+                if " = " in line and Global:
                     if "Commit.Integer" in line:
                         integers = np.append(integers, int(line.split("= ")[-1].strip()))
                     if "Commit.FloatingPoint" in line:

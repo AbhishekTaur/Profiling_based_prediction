@@ -310,7 +310,10 @@ def process_file(file, process_df, rows):
             time_data = np.append(time_data, int(line.split(" ")[1]))
         if "Busy stats" in line:
             timeSeries = True
-
+        if "[ Global ]" in line:
+            Global = True
+        if "[ Core 0 ]" in line:
+            break
         if " = " in line:
             if "Commit.Integer" in line:
                 integers = np.append(integers, int(line.split("= ")[-1].strip()))
