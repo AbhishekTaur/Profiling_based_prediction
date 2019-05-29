@@ -8,8 +8,8 @@ import pandas as pd
 from benchmark import Benchmark
 import re
 
-program_dict = {0: 'blackscholes', 1: 'dedup', 2: 'streamcluster', 3: 'swaptions', 4: 'freqmine', 5: 'fluidanimate',
-                6: 'canneal'}
+program_dict = {0: 'blackscholes', 1: 'dedup', 2: 'streamcluster', 3: 'freqmine', 4: 'fluidanimate',
+                5: 'canneal'}
 
 benchmark_files = {'blackscholes': [], 'dedup': [], 'streamcluster': [], 'swaptions': [], 'freqmine': [],
                    'fluidanimate': [], 'canneal': []}
@@ -97,7 +97,7 @@ def main():
 
     # Get the list of all files in directory tree at given path
 
-    subset = sample([i for i in range(6)], 5)
+    subset = sample([i for i in range(5)], 5)
     run_number = str(randint(0, 10000))
     print(subset)
     train_subset = []
