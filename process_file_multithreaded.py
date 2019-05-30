@@ -107,7 +107,7 @@ def main():
 
     for key in subset:
         train_subset.append(program_dict[key])
-    for key in range(7):
+    for key in range(6):
         if key not in subset:
             test_subset.append(program_dict[key])
 
