@@ -1,6 +1,5 @@
 import torch
 import numpy as np
-from sklearn.preprocessing import MinMaxScaler
 
 from model import MLP
 import torch.nn as nn
@@ -53,7 +52,7 @@ def getConfigFilesList(dirName, inside, run_number, dict_t, phase):
                 dict_t[run_number].append(fullPath)
 
 
-def get_data(config_files, n, run_number, phase):
+def get_data(config_files, n, run_number):
     data_X = []
     y_onehot_list = []
     df_y = pd.read_csv('train_{}/best_config_file.csv'.format(run_number))
@@ -74,8 +73,8 @@ def get_data(config_files, n, run_number, phase):
     return data_X, data_Y
 
 
-def get_data_prev_n(n, config_files, run_number):
-    data_X, data_Y = get_data(config_files, n, run_number, 'train')
+def get_data_train(n, config_files, run_number):
+    data_X, data_Y = get_data(config_files, n, run_number)
     train_size = int(len(data_X)*0.8)
     data_X = data_X[0:train_size]
     data_Y = data_Y[0:train_size]
@@ -85,8 +84,8 @@ def get_data_prev_n(n, config_files, run_number):
     return X, y
 
 
-def get_data_test(n, config_files, run_number):
-    data_X, data_Y = get_data(config_files, n, run_number, 'validate')
+def get_data_validate(n, config_files, run_number):
+    data_X, data_Y = get_data(config_files, n, run_number)
     data_X = data_X[int(len(data_X) * 0.8):]
     data_Y = data_Y[int(len(data_Y)*0.8):]
     X = torch.Tensor(data_X)
@@ -158,7 +157,7 @@ def train_optim(model, label, input):
 
 
 def validate(n, config_files, run_number, model):
-    X, y = get_data_test(n, config_files, run_number)
+    X, y = get_data_validate(n, config_files, run_number)
     X = X.to(device)
     y = y.to(device)
     test_output = []
@@ -173,12 +172,90 @@ def validate(n, config_files, run_number, model):
     return np.sum(np.array(test_output).reshape(-1, 1) == np.array(y.cpu(), dtype=int).reshape(-1, 1)) / len(y)
 
 
+def get_data_test(config_files, run_number):
+    data_X = []
+    # y_onehot_list = []
+    # df_y = pd.read_csv('train_{}/best_config_file.csv'.format(run_number))
+    # if n > 0:
+    #     y_onehot = oneHotEncoding(df_y.get('Best Configuration').values)[:-n]
+    #     y_onehot = np.vstack((np.zeros(shape=(n, 8), dtype=np.int), y_onehot))
+    # else:
+    #     y_onehot = pd.get_dummies(df_y.get('Best Configuration')).values[:]
+    for config, j in zip(config_files, range(len(config_files))):
+        df = pd.read_csv(config, usecols=features).values
+        data_X.append(df)
+
+        # y_onehot_list.append(y_onehot)
+    data_X = np.vstack(tuple(data_X))
+    # data_Y = df_y.get('Best Configuration').values
+    # if n > 0:
+    #     data_X = np.hstack((data_X, y_onehot))
+    return data_X
+
+
+def test(config_files, run_number):
+    # get_data_test(config_files,  run_number)
+    df_4_40 = pd.read_csv('./test_{}/merged_config_test_4_40.csv'.format(run_number))
+    df_4_60 = pd.read_csv('./test_{}/merged_config_test_4_60.csv'.format(run_number))
+    df_4_80 = pd.read_csv('./test_{}/merged_config_test_4_80.csv'.format(run_number))
+    df_4_100 = pd.read_csv('./test_{}/merged_config_test_4_100.csv'.format(run_number))
+    df_8_40 = pd.read_csv('./test_{}/merged_config_test_8_40.csv'.format(run_number))
+    df_8_60 = pd.read_csv('./test_{}/merged_config_test_8_60.csv'.format(run_number))
+    df_8_80 = pd.read_csv('./test_{}/merged_config_test_8_80.csv'.format(run_number))
+    df_8_100 = pd.read_csv('./test_{}/merged_config_test_8_100.csv'.format(run_number))
+    best_config = pd.read_csv('./test_{}/best_config_file.csv'.format(run_number))
+    df_keys = {0: df_4_40, 1: df_4_60, 2: df_4_80, 3: df_4_100,
+               4: df_8_40,5: df_8_60, 6: df_8_80, 7: df_8_100}
+
+    min_rows = 0
+    for i in df_keys.keys():
+        rows = df_keys[i].shape[0]
+        if i == 0:
+            min_rows = rows
+        elif min_rows > rows:
+            min_rows = rows
+
+    model = MLP(15, 16, 8)
+    model.load_state_dict(torch.load('checkpoint/MLP_model_019_train.pwf', map_location='cpu'))
+    model.eval()
+
+    one_hot_y = oneHotEncoding([7])[0]
+    data_point = list(df_8_100.iloc[0, [1, 2, 3, 5, 6, 7, 8]].values)
+    data_point = torch.Tensor(data_point + one_hot_y)
+
+    cycles = df_8_100.iloc[0, 4]
+    cycles_complete = df_8_100.iloc[0, 4]
+    best_cycles = df_keys[best_config.iloc[0, -1]].iloc[0, 4]
+    predicted = model.forward(data_point.reshape(1, -1))
+    predicted = np.argmax(predicted.detach().cpu().numpy(), axis=-1)
+
+    for i in range(1, min_rows):
+        data_point = list(df_keys[predicted[0]].iloc[i, [1, 2, 3, 5, 6, 7, 8]].values)
+        one_hot_y = oneHotEncoding(predicted)[0]
+        data_point = torch.Tensor(data_point + one_hot_y)
+        cycles = cycles + df_keys[predicted[0]].iloc[i, 4]
+        predicted = model.forward(data_point.reshape(1, -1))
+        predicted = np.argmax(predicted.detach().cpu().numpy(), axis=-1)
+        cycles_complete = cycles_complete + df_8_100.iloc[i, 4]
+        best_cycles = best_cycles + df_keys[best_config.iloc[i, -1]].iloc[i, 4]
+
+    print('cycles calculated:', cycles)
+    print('cycles for complete configuration:', cycles_complete)
+    print('best configuration cycles:', best_cycles)
+    print('complete cycle percentage', cycles/cycles_complete * 100)
+    print('best cycle percentage', cycles/best_cycles*100)
+
+
 def main():
     [os.remove(os.path.join(".", f)) for f in os.listdir(".") if f.endswith(".png")]
     train_dict = {}
+    test_dict = {}
     getConfigFilesList('.', False, 0, train_dict, 'train')
-    for key in train_dict.keys():
-        train(train_dict[key], key)
+    getConfigFilesList('.', False, 0, test_dict, 'test')
+    # for key in train_dict.keys():
+    #     train(train_dict[key], key)
+    for key in test_dict.keys():
+        test(test_dict[key], key)
 
 
 def plot_output_epoch(output, i, n):
@@ -230,7 +307,7 @@ def train(config_files, run_number):
     max_accuracy = []
     max_validation_accuracy = []
     for n in range(1, 2):
-        X, y = get_data_prev_n(n, config_files, run_number)
+        X, y = get_data_train(n, config_files, run_number)
         input_size, hidden_size, output_size = X.shape[1], 16, 8
         model = MLP(input_size, hidden_size, output_size)
         model.to(device)
