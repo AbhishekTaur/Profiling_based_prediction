@@ -239,11 +239,13 @@ def test(config_files, run_number):
         cycles_complete = cycles_complete + df_8_100.iloc[i, 4]
         best_cycles = best_cycles + df_keys[best_config.iloc[i, -1]].iloc[i, 4]
 
+    print('run number:', run_number)
     print('cycles calculated:', cycles)
     print('cycles for complete configuration:', cycles_complete)
     print('best configuration cycles:', best_cycles)
     print('complete cycle percentage', cycles/cycles_complete * 100)
     print('best cycle percentage', cycles/best_cycles*100)
+    print('\n')
 
 
 def main():
