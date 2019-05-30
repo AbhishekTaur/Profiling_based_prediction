@@ -38,38 +38,68 @@ def getLeastNumberOfRows(merge_dict):
         merge_dict[key] = merge_dict[key][0:min_rows]
 
 
+def getLeastNumber(configs_files):
+    min_rows = 0
+    for i, config_file in enumerate(configs_files):
+        df = pd.read_csv('./' + config_file)
+        if i == 0:
+            min_rows = df.shape[0]
+        elif min_rows > df.shape[0]:
+            min_rows = df.shape[0]
+
+    return min_rows
+
+
 def write_best_config(config_files, run_number, mode):
-    config_dict = {}
     configs = {'4_40': 0, '4_60': 1, '4_80': 2, '4_100': 3, '8_40': 4, '8_60': 5, '8_80': 6, '8_100': 7}
     best_config = {'Best Configuration': []}
-    for config_file in config_files:
-        df = pd.read_csv(config_file)
-        config = configs[config_file.split(".csv")[0].split("_{}_".format(mode))[-1]]
-        phases = df['Phase'].values
-        cycles = df['Cycles'].values
-        for i in range(len(cycles)):
-            if not phases[i] in config_dict.keys() or not config in config_dict[phases[i]].keys():
-                if phases[i] in config_dict.keys():
-                    config_dict[phases[i]][config] = [cycles[i]]
-                else:
-                    config_dict[phases[i]] = {config: [cycles[i]]}
-            else:
-                if config_dict[phases[i]][config] > cycles[i]:
-                    config_dict[phases[i]][config] = [cycles[i]]
+    min_rows = getLeastNumber(config_files)
+    df_list = []
+    for config in configs:
+        df_list.append(pd.read_csv('./{}_{}/merged_config_{}_{}.csv'.format(mode, run_number, mode, config)))
 
-    for phase in config_dict.keys():
-        temp = min([config_dict[phase][key][0] for key in config_dict[phase].keys()])
-        for key in config_dict[phase].keys():
-            if not isinstance(config_dict[phase], int) and config_dict[phase][key][0] == temp:
-                config_dict[phase] = key
+    for _ in range(8):
+        for i in range(min_rows):
+            cycles_array = [int(df.get('Cycles')[i]) for df in df_list]
+            min_cycles = cycles_array.index(min(cycles_array))
+            best_config['Best Configuration'].append(min_cycles)
 
-    for config_file in config_files:
-        data = pd.read_csv(config_file, usecols=['Phase']).values
-        for phase in data:
-            best_config['Best Configuration'].append(config_dict[phase[0]])
+    df = pd.DataFrame(data=best_config, index=None)
+    df.to_csv(path_or_buf='./{}_{}/best_config_file.csv'.format(mode, run_number), index=False)
 
-    config_df = pd.DataFrame(data=best_config)
-    config_df.to_csv(path_or_buf='{}_{}/best_config_file.csv'.format(mode, run_number), index=False)
+
+# def write_best_config(config_files, run_number, mode):
+#     config_dict = {}
+#     configs = {'4_40': 0, '4_60': 1, '4_80': 2, '4_100': 3, '8_40': 4, '8_60': 5, '8_80': 6, '8_100': 7}
+#     best_config = {'Best Configuration': []}
+#     for config_file in config_files:
+#         df = pd.read_csv(config_file)
+#         config = configs[config_file.split(".csv")[0].split("_{}_".format(mode))[-1]]
+#         phases = df['Phase'].values
+#         cycles = df['Cycles'].values
+#         for i in range(len(cycles)):
+#             if not phases[i] in config_dict.keys() or not config in config_dict[phases[i]].keys():
+#                 if phases[i] in config_dict.keys():
+#                     config_dict[phases[i]][config] = [cycles[i]]
+#                 else:
+#                     config_dict[phases[i]] = {config: [cycles[i]]}
+#             else:
+#                 if config_dict[phases[i]][config] > cycles[i]:
+#                     config_dict[phases[i]][config] = [cycles[i]]
+#
+#     for phase in config_dict.keys():
+#         temp = min([config_dict[phase][key][0] for key in config_dict[phase].keys()])
+#         for key in config_dict[phase].keys():
+#             if not isinstance(config_dict[phase], int) and config_dict[phase][key][0] == temp:
+#                 config_dict[phase] = key
+#
+#     for config_file in config_files:
+#         data = pd.read_csv(config_file, usecols=['Phase']).values
+#         for phase in data:
+#             best_config['Best Configuration'].append(config_dict[phase[0]])
+#
+#     config_df = pd.DataFrame(data=best_config)
+#     config_df.to_csv(path_or_buf='{}_{}/best_config_file.csv'.format(mode, run_number), index=False)
 
 
 def merge_data(processed_file, merged_file):

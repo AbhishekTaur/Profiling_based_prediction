@@ -14,7 +14,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(device)
 
 features = ['Normalized integer', 'Normalized floating', 'Normalized control', 'Normalized time avg',
-            'Ratio Memory', 'Ratio branches', 'Ratio call']
+            'Ratio Memory', 'Ratio branches', 'Ratio call', 'Phase']
 
 one_hot_encoder = {0: [0, 0, 0, 0, 0, 0, 0, 1], 1: [0, 0, 0, 0, 0, 0, 1, 0], 2: [0, 0, 0, 0, 0, 1, 0, 0],
                    3: [0, 0, 0, 0, 1, 0, 0, 0],
@@ -52,17 +52,39 @@ def getConfigFilesList(dirName, inside, run_number, dict_t, phase):
                 dict_t[run_number].append(fullPath)
 
 
+# def get_data(config_files, n, run_number):
+#     data_X = []
+#     y_onehot_list = []
+#     df_y = pd.read_csv('train_{}/best_config_file.csv'.format(run_number))
+#     if n > 0:
+#         y_onehot = oneHotEncoding(df_y.get('Best Configuration').values)[:-n]
+#         y_onehot = np.vstack((np.zeros(shape=(n, 8), dtype=np.int), y_onehot))
+#     else:
+#         y_onehot = pd.get_dummies(df_y.get('Best Configuration')).values[:]
+#     for config, j in zip(config_files, range(len(config_files))):
+#         df = pd.read_csv(config, usecols=features).values
+#         data_X.append(df)
+#
+#         y_onehot_list.append(y_onehot)
+#     data_X = np.vstack(tuple(data_X))
+#     data_Y = df_y.get('Best Configuration').values
+#     if n > 0:
+#         data_X = np.hstack((data_X, y_onehot))
+#     return data_X, data_Y
+
+
 def get_data(config_files, n, run_number):
     data_X = []
     y_onehot_list = []
     df_y = pd.read_csv('train_{}/best_config_file.csv'.format(run_number))
+    min_rows = int(df_y.shape[0]/8)
     if n > 0:
         y_onehot = oneHotEncoding(df_y.get('Best Configuration').values)[:-n]
         y_onehot = np.vstack((np.zeros(shape=(n, 8), dtype=np.int), y_onehot))
     else:
         y_onehot = pd.get_dummies(df_y.get('Best Configuration')).values[:]
     for config, j in zip(config_files, range(len(config_files))):
-        df = pd.read_csv(config, usecols=features).values
+        df = pd.read_csv(config, usecols=features).values[0:min_rows]
         data_X.append(df)
 
         y_onehot_list.append(y_onehot)
@@ -195,13 +217,16 @@ def test(n, run_number):
             min_rows = rows
 
     if n == 1:
-        model = MLP(15, 16, 8)
+        # model = MLP(15, 16, 8)
+        model = MLP(16, 16, 8)
     else:
-        model = MLP(7, 16, 8)
+        # model = MLP(7, 16, 8)
+        model = MLP(8, 16, 8)
     model.load_state_dict(torch.load('checkpoint/MLP_model_000_train.pwf', map_location='cpu'))
     model.eval()
 
-    data_point = list(df_8_100.iloc[0, [1, 2, 3, 5, 6, 7, 8]].values)
+    # data_point = list(df_8_100.iloc[0, [1, 2, 3, 5, 6, 7, 8]].values)
+    data_point = list(df_8_100.iloc[0, [1, 2, 3, 5, 6, 7, 8, 9]].values)
 
     if n == 1:
         one_hot_y = [0, 0, 0, 0, 0, 0, 0, 0]
@@ -215,7 +240,8 @@ def test(n, run_number):
     predicted = np.argmax(predicted.detach().cpu().numpy(), axis=-1)
 
     for i in range(1, min_rows):
-        data_point = list(df_keys[predicted[0]].iloc[i, [1, 2, 3, 5, 6, 7, 8]].values)
+        # data_point = list(df_keys[predicted[0]].iloc[i, [1, 2, 3, 5, 6, 7, 8]].values)
+        data_point = list(df_keys[predicted[0]].iloc[i, [1, 2, 3, 5, 6, 7, 8, 9]].values)
         if n == 1:
             one_hot_y = oneHotEncoding(predicted)[0]
             data_point = torch.Tensor(data_point + one_hot_y)
