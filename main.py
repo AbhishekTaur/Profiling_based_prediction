@@ -219,7 +219,7 @@ def test(config_files, run_number):
     model.load_state_dict(torch.load('checkpoint/MLP_model_019_train.pwf', map_location='cpu'))
     model.eval()
 
-    one_hot_y = oneHotEncoding([7])[0]
+    one_hot_y = [0, 0, 0, 0, 0, 0, 0, 0]
     data_point = list(df_8_100.iloc[0, [1, 2, 3, 5, 6, 7, 8]].values)
     data_point = torch.Tensor(data_point + one_hot_y)
 
@@ -254,9 +254,8 @@ def main():
     test_dict = {}
     getConfigFilesList('.', False, 0, train_dict, 'train')
     getConfigFilesList('.', False, 0, test_dict, 'test')
-    # for key in train_dict.keys():
-    #     train(train_dict[key], key)
-    for key in test_dict.keys():
+    for key in train_dict.keys():
+        train(train_dict[key], key)
         test(test_dict[key], key)
 
 
