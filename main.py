@@ -172,28 +172,7 @@ def validate(n, config_files, run_number, model):
     return np.sum(np.array(test_output).reshape(-1, 1) == np.array(y.cpu(), dtype=int).reshape(-1, 1)) / len(y)
 
 
-def get_data_test(config_files, run_number):
-    data_X = []
-    # y_onehot_list = []
-    # df_y = pd.read_csv('train_{}/best_config_file.csv'.format(run_number))
-    # if n > 0:
-    #     y_onehot = oneHotEncoding(df_y.get('Best Configuration').values)[:-n]
-    #     y_onehot = np.vstack((np.zeros(shape=(n, 8), dtype=np.int), y_onehot))
-    # else:
-    #     y_onehot = pd.get_dummies(df_y.get('Best Configuration')).values[:]
-    for config, j in zip(config_files, range(len(config_files))):
-        df = pd.read_csv(config, usecols=features).values
-        data_X.append(df)
-
-        # y_onehot_list.append(y_onehot)
-    data_X = np.vstack(tuple(data_X))
-    # data_Y = df_y.get('Best Configuration').values
-    # if n > 0:
-    #     data_X = np.hstack((data_X, y_onehot))
-    return data_X
-
-
-def test(config_files, run_number):
+def test(n, run_number):
     # get_data_test(config_files,  run_number)
     df_4_40 = pd.read_csv('./test_{}/merged_config_test_4_40.csv'.format(run_number))
     df_4_60 = pd.read_csv('./test_{}/merged_config_test_4_60.csv'.format(run_number))
@@ -205,7 +184,7 @@ def test(config_files, run_number):
     df_8_100 = pd.read_csv('./test_{}/merged_config_test_8_100.csv'.format(run_number))
     best_config = pd.read_csv('./test_{}/best_config_file.csv'.format(run_number))
     df_keys = {0: df_4_40, 1: df_4_60, 2: df_4_80, 3: df_4_100,
-               4: df_8_40,5: df_8_60, 6: df_8_80, 7: df_8_100}
+               4: df_8_40, 5: df_8_60, 6: df_8_80, 7: df_8_100}
 
     min_rows = 0
     for i in df_keys.keys():
@@ -215,14 +194,20 @@ def test(config_files, run_number):
         elif min_rows > rows:
             min_rows = rows
 
-    model = MLP(15, 16, 8)
-    model.load_state_dict(torch.load('checkpoint/MLP_model_019_train.pwf', map_location='cpu'))
+    if n == 1:
+        model = MLP(15, 16, 8)
+    else:
+        model = MLP(7, 16, 8)
+    model.load_state_dict(torch.load('checkpoint/MLP_model_000_train.pwf', map_location='cpu'))
     model.eval()
 
-    one_hot_y = [0, 0, 0, 0, 0, 0, 0, 0]
     data_point = list(df_8_100.iloc[0, [1, 2, 3, 5, 6, 7, 8]].values)
-    data_point = torch.Tensor(data_point + one_hot_y)
 
+    if n == 1:
+        one_hot_y = [0, 0, 0, 0, 0, 0, 0, 0]
+        data_point = torch.Tensor(data_point + one_hot_y)
+    else:
+        data_point = torch.Tensor(data_point)
     cycles = df_8_100.iloc[0, 4]
     cycles_complete = df_8_100.iloc[0, 4]
     best_cycles = df_keys[best_config.iloc[0, -1]].iloc[0, 4]
@@ -231,8 +216,11 @@ def test(config_files, run_number):
 
     for i in range(1, min_rows):
         data_point = list(df_keys[predicted[0]].iloc[i, [1, 2, 3, 5, 6, 7, 8]].values)
-        one_hot_y = oneHotEncoding(predicted)[0]
-        data_point = torch.Tensor(data_point + one_hot_y)
+        if n == 1:
+            one_hot_y = oneHotEncoding(predicted)[0]
+            data_point = torch.Tensor(data_point + one_hot_y)
+        else:
+            data_point = torch.Tensor(data_point)
         cycles = cycles + df_keys[predicted[0]].iloc[i, 4]
         predicted = model.forward(data_point.reshape(1, -1))
         predicted = np.argmax(predicted.detach().cpu().numpy(), axis=-1)
@@ -256,7 +244,7 @@ def main():
     getConfigFilesList('.', False, 0, test_dict, 'test')
     for key in train_dict.keys():
         train(train_dict[key], key)
-        test(test_dict[key], key)
+        test(1, key)
 
 
 def plot_output_epoch(output, i, n):
