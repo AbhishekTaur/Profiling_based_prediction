@@ -269,6 +269,7 @@ def test(n, run_number):
 
     print(cycles_array)
     print(cycles)
+    print('About to plot the graphs for run_number: {}'.format(run_number))
     font = {'family': 'serif',
             'color': 'darkred',
             'weight': 'normal',
