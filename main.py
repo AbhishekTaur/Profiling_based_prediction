@@ -307,7 +307,7 @@ def main():
     getConfigFilesList('.', False, 0, train_dict, 'train')
     getConfigFilesList('.', False, 0, test_dict, 'test')
     for key in train_dict.keys():
-        # train(train_dict[key], key)
+        train(train_dict[key], key)
         test(1, key)
 
 
