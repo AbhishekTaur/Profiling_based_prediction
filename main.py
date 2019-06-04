@@ -14,8 +14,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 print(device)
 
-# features = ['Normalized integer', 'Normalized floating', 'Normalized control', 'Normalized time avg',
-#             'Ratio Memory', 'Ratio branches', 'Ratio call', 'Phase']
+
 features = ['Normalized integer', 'Normalized floating', 'Normalized control', 'Normalized time avg',
             'Ratio Memory', 'Ratio branches', 'Ratio call']
 
@@ -79,28 +78,6 @@ def get_data(config_files, n, run_number):
     if n > 0:
         data_X = np.hstack((data_X, y_onehot))
     return data_X, data_Y
-
-
-# def get_data(config_files, n, run_number):
-#     data_X = []
-#     y_onehot_list = []
-#     df_y = pd.read_csv('train_{}/best_config_file.csv'.format(run_number))
-#     min_rows = int(df_y.shape[0]/8)
-#     if n > 0:
-#         y_onehot = oneHotEncoding(df_y.get('Best Configuration').values)[:-n]
-#         y_onehot = np.vstack((np.zeros(shape=(n, 8), dtype=np.int), y_onehot))
-#     else:
-#         y_onehot = pd.get_dummies(df_y.get('Best Configuration')).values[:]
-#     for config, j in zip(config_files, range(len(config_files))):
-#         df = pd.read_csv(config, usecols=features).values[0:min_rows]
-#         data_X.append(df)
-#
-#         y_onehot_list.append(y_onehot)
-#     data_X = np.vstack(tuple(data_X))
-#     data_Y = df_y.get('Best Configuration').values
-#     if n > 0:
-#         data_X = np.hstack((data_X, y_onehot))
-#     return data_X, data_Y
 
 
 def get_data_train(n, config_files, run_number):
@@ -225,15 +202,12 @@ def test(n, run_number):
 
     if n == 1:
         model = MLP(15, 16, 8)
-        # model = MLP(16, 16, 8)
     else:
         model = MLP(7, 16, 8)
-        # model = MLP(8, 16, 8)
-    model.load_state_dict(torch.load('checkpoint/MLP_model_000_train.pwf', map_location='cpu'))
+    model.load_state_dict(torch.load('checkpoint/MLP_model_19_train.pwf', map_location='cpu'))
     model.eval()
 
     data_point = list(df_8_100.iloc[0, [1, 2, 3, 5, 6, 7, 8]].values)
-    # data_point = list(df_8_100.iloc[0, [1, 2, 3, 5, 6, 7, 8, 9]].values)
 
     if n == 1:
         one_hot_y = [0, 0, 0, 0, 0, 0, 0, 0]
@@ -251,7 +225,6 @@ def test(n, run_number):
     x_pos = [0]
     for i in range(1, min_rows):
         data_point = list(df_keys[predicted[0]].iloc[i, [1, 2, 3, 5, 6, 7, 8]].values)
-        # data_point = list(df_keys[predicted[0]].iloc[i, [1, 2, 3, 5, 6, 7, 8, 9]].values)
         if n == 1:
             one_hot_y = oneHotEncoding(predicted)[0]
             data_point = torch.Tensor(data_point + one_hot_y)
@@ -267,8 +240,6 @@ def test(n, run_number):
         cycles_complete = cycles_complete + df_8_100.iloc[i, 4]
         best_cycles = best_cycles + df_keys[best_config.iloc[i, -1]].iloc[i, 4]
 
-    print(cycles_array)
-    print(cycles)
     print('About to plot the graphs for run_number: {}'.format(run_number))
     font = {'family': 'serif',
             'color': 'darkred',
@@ -279,17 +250,19 @@ def test(n, run_number):
     widths = [cycle * 10**-8*0.8 for cycle in cycles_array]
     x_pos_reduced = [x * 10**-8 for x in x_pos]
     plt.bar(x_pos_reduced, cores, width=widths)
-    plt.xlabel('Cycles', fontdict=font)
+    plt.xlabel('Cycles($10^8$)', fontdict=font)
     plt.ylabel('Cores', fontdict=font)
     plt.title("Cores used over cycles", fontdict=font)
     plt.savefig("Cores_{}.png".format(run_number))
+    plt.close()
 
     plt.figure(figsize=(25, 15))
     plt.bar(x_pos_reduced, llc, width=widths)
-    plt.xlabel('Cycles', fontdict=font)
+    plt.xlabel('Cycles($10^8$)', fontdict=font)
     plt.ylabel('LLC', fontdict=font)
-    plt.title("Cores used over cycles", fontdict=font)
+    plt.title("LLC used over cycles", fontdict=font)
     plt.savefig("LLC_{}.png".format(run_number))
+    plt.close()
 
     print('run number:', run_number)
     print('cycles calculated:', cycles)
@@ -376,9 +349,9 @@ def train(config_files, run_number):
             accuracy.append((np.sum(output_i == y.cpu().numpy()) / y.size())[0])
             if not os.path.isdir('checkpoint'):
                 os.mkdir('checkpoint')
-            torch.save(model.state_dict(), "checkpoint/MLP_model_{0:03d}_train.pwf".format(i))
+            torch.save(model.state_dict(), "checkpoint/MLP_model_{}_train.pwf".format(i))
             test_accuracy.append(validate(n, config_files, run_number, model))
-            torch.save(model.state_dict(), "checkpoint/MLP_model_{0:03d}_validate.pwf".format(i))
+            torch.save(model.state_dict(), "checkpoint/MLP_model_{}_validate.pwf".format(i))
 
         x = np.arange(len(accuracy))
         plt.plot(x, accuracy)
