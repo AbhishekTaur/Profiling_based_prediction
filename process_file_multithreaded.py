@@ -38,36 +38,6 @@ def getLeastNumberOfRows(merge_dict):
         merge_dict[key] = merge_dict[key][0:min_rows]
 
 
-# def getLeastNumber(configs_files):
-#     min_rows = 0
-#     for i, config_file in enumerate(configs_files):
-#         df = pd.read_csv('./' + config_file)
-#         if i == 0:
-#             min_rows = df.shape[0]
-#         elif min_rows > df.shape[0]:
-#             min_rows = df.shape[0]
-#
-#     return min_rows
-
-
-# def write_best_config(config_files, run_number, mode):
-#     configs = {'4_40': 0, '4_60': 1, '4_80': 2, '4_100': 3, '8_40': 4, '8_60': 5, '8_80': 6, '8_100': 7}
-#     best_config = {'Best Configuration': []}
-#     min_rows = getLeastNumber(config_files)
-#     df_list = []
-#     for config in configs:
-#         df_list.append(pd.read_csv('./{}_{}/merged_config_{}_{}.csv'.format(mode, run_number, mode, config)))
-#
-#     for _ in range(8):
-#         for i in range(min_rows):
-#             cycles_array = [int(df.get('Cycles')[i]) for df in df_list]
-#             min_cycles = cycles_array.index(min(cycles_array))
-#             best_config['Best Configuration'].append(min_cycles)
-#
-#     df = pd.DataFrame(data=best_config, index=None)
-#     df.to_csv(path_or_buf='./{}_{}/best_config_file.csv'.format(mode, run_number), index=False)
-
-
 def write_best_config(config_files, run_number, mode):
     config_dict = {}
     configs = {'4_40': 0, '4_60': 1, '4_80': 2, '4_100': 3, '8_40': 4, '8_60': 5, '8_80': 6, '8_100': 7}
