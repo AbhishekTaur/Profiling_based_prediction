@@ -31,8 +31,8 @@ def plot_phases(df, cores, cache):
 def main():
     for merged_file in merged_files:
         df = pd.read_csv("train_4050/{}".format(merged_file))
-        plot_cycles(df, merged_file.split("_")[-2], merged_file.split("_")[-1])
-        plot_phases(df, merged_file.split("_")[-2], merged_file.split("_")[-1])
+        plot_cycles(df, merged_file.split("_")[-2], merged_file.split("_")[-1].split(".")[0])
+        plot_phases(df, merged_file.split("_")[-2], merged_file.split("_")[-1].split(".")[0])
 
 
 if __name__=="__main__":
