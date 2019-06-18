@@ -30,14 +30,15 @@ def test(run_number):
         if config == config_trans:
             sim_percent = sim_percent + 1
 
-    print(best_config_cycles)
-    print(best_config_trans_cycles)
+    print('best config cycles in train run number {}: '.format(run_number), best_config_cycles)
+    print('best config transition cycles in train run number {}: '.format(run_number), best_config_trans_cycles)
+    print('similarity percent in train run number {}: '.format(run_number), sim_percent/len(best_config))
         
-
 
 def main():
     for key in train_dict.keys():
         test(key)
+
 
 if __name__=='__main__':
     main()
