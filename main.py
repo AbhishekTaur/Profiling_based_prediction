@@ -1,14 +1,8 @@
 import torch
-import numpy as np
-
 from model import MLP
 import torch.nn as nn
 import pandas as pd
-import matplotlib.pyplot as plt
-import os
-import re
-from collections import Counter
-import seaborn as sns
+from data_utils import *
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -34,29 +28,6 @@ def oneHotEncoding(y):
     for i in range(len(y)):
         y_out.append(one_hot_encoder[y[i]])
     return y_out
-
-
-def getConfigFilesList(dirName, inside, run_number, dict_t, phase):
-    listOfFile = os.listdir(dirName)
-    for entry in listOfFile:
-        if phase == 'train':
-            searchString = '^train_\d{1,4}$'
-        else:
-            searchString = '^test_\d{1,4}$'
-        if re.search(searchString, entry):
-            inside = True
-            run_number = int(entry.split("_")[1])
-            if not run_number in dict_t.keys():
-                dict_t[run_number] = []
-            elif len(dict_t[run_number]) == 8:
-                inside = False
-
-        if inside:
-            fullPath = os.path.join(dirName, entry)
-            if os.path.isdir(fullPath):
-                getConfigFilesList(fullPath, inside, run_number, dict_t, phase)
-            elif 'merged_config_{}'.format(phase) in fullPath:
-                dict_t[run_number].append(fullPath)
 
 
 def get_data(config_files, n, run_number):
@@ -193,12 +164,7 @@ def test(n, run_number):
                4: df_8_40, 5: df_8_60, 6: df_8_80, 7: df_8_100}
 
     min_rows = 0
-    for i in df_keys.keys():
-        rows = df_keys[i].shape[0]
-        if i == 0:
-            min_rows = rows
-        elif min_rows > rows:
-            min_rows = rows
+    min_rows = get_min_rows(df_keys, min_rows)
 
     if n == 1:
         model = MLP(15, 16, 8)
@@ -246,23 +212,11 @@ def test(n, run_number):
             'weight': 'normal',
             'size': 32,
             }
-    plt.figure(figsize=(25, 15))
+
     widths = [cycle * 10**-8*0.8 for cycle in cycles_array]
     x_pos_reduced = [x * 10**-8 for x in x_pos]
-    plt.bar(x_pos_reduced, cores, width=widths)
-    plt.xlabel('Cycles($10^8$)', fontdict=font)
-    plt.ylabel('Cores', fontdict=font)
-    plt.title("Cores used over cycles", fontdict=font)
-    plt.savefig("Cores_{}.png".format(run_number))
-    plt.close()
-
-    plt.figure(figsize=(25, 15))
-    plt.bar(x_pos_reduced, llc, width=widths)
-    plt.xlabel('Cycles($10^8$)', fontdict=font)
-    plt.ylabel('LLC', fontdict=font)
-    plt.title("LLC used over cycles", fontdict=font)
-    plt.savefig("LLC_{}.png".format(run_number))
-    plt.close()
+    plot_test_results(cores, font, run_number, widths, x_pos_reduced, 'Cores')
+    plot_test_results(llc, font, run_number, widths, x_pos_reduced, 'LLC')
 
     print('run number:', run_number)
     print('cycles calculated:', cycles)
@@ -282,51 +236,6 @@ def main():
     for key in train_dict.keys():
         train(train_dict[key], key)
         test(1, key)
-
-
-def plot_output_epoch(output, i, n):
-    x = np.arange(len(output))
-    plt.plot(x, height=output, align='center')
-    plt.xlabel("datapoint")
-    plt.ylabel("Predicted")
-    plt.title("Prediction for {} epoch".format(i))
-
-    plt.savefig('Predicted_{}_{}.png'.format(i, n))
-    plt.figure()
-
-
-def plot_actual_epoch(output, i, n):
-    x = np.arange(len(output))
-    plt.plot(x, height=output, align='center')
-    plt.xlabel("datapoint")
-    plt.ylabel("Predicted")
-    plt.title("Actual for {} epoch".format(i))
-
-    plt.savefig('Actual_{}_{}.png'.format(i, n))
-    plt.figure()
-
-
-def freq(lst):
-    d = {}
-    for i in lst:
-        if d.get(i):
-            d[i] += 1
-        else:
-            d[i] = 1
-    return d
-
-
-def parse_indexes(list1):
-    index_list = []
-    dictor = Counter(list1)
-    counter_list = [dictor[x] for x in dictor]
-    counter_list.sort()
-    if len(counter_list) > 1:
-        indexes = counter_list[-2]
-
-    for x in dictor:
-        index_list = index_list + list(np.where(list1 == x)[0][0:indexes])
-    return index_list
 
 
 def train(config_files, run_number):
@@ -353,28 +262,8 @@ def train(config_files, run_number):
             test_accuracy.append(validate(n, config_files, run_number, model))
             torch.save(model.state_dict(), "checkpoint/MLP_model_{}_validate.pwf".format(i))
 
-        x = np.arange(len(accuracy))
-        plt.plot(x, accuracy)
-        plt.xlabel("epochs")
-        plt.ylabel("Accuracy")
-        plt.title("Accuracy over epochs")
-
-        max_accuracy.append([max(accuracy), accuracy.index(max(accuracy))])
-        plt.savefig('train_{}_{}.png'.format(run_number, n))
-        plt.figure()
-
-        x_validate = np.arange(len(test_accuracy))
-        plt.plot(x_validate, test_accuracy, color='r')
-        plt.xlabel("epochs")
-        plt.ylabel("Accuracy")
-        plt.title("Test Accuracy over epochs")
-
-        max_validation_accuracy.append([max(test_accuracy), test_accuracy.index(max(test_accuracy))])
-        plt.savefig('validate_{}_{}.png'.format(run_number, n))
-        plt.figure()
-
-    print('run_number: ', run_number, ', Maximum accuracy: ', max_accuracy)
-    print('run_number: ', run_number, ', Maximum validation accuracy: ', max_validation_accuracy)
+        plot_accuracy_n_print(accuracy, max_accuracy, n, run_number, 'train')
+        plot_accuracy_n_print(test_accuracy, max_validation_accuracy, n, run_number, 'validate')
 
 
 if __name__ == "__main__":
