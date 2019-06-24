@@ -180,6 +180,17 @@ def test(n, run_number):
         data_point = torch.Tensor(data_point + one_hot_y)
     else:
         data_point = torch.Tensor(data_point)
+
+    with open("parameters.txt", "w") as f:
+        f.write("Parameters \n")
+        for i, param in enumerate(list(model.parameters())):
+            if i % 2 == 0:
+                weight = "weight for {} layer: ".format(i / 2 + 1) + str(param) + "\n"
+                f.write(weight)
+            else:
+                bias = "bias for {} layer: ".format(int(i / 2) + 1) + str(param) + "\n"
+                f.write(bias)
+
     cycles = df_8_100.iloc[0, 4]
     cycles_complete = df_8_100.iloc[0, 4]
     best_cycles = df_keys[best_config.iloc[0, -1]].iloc[0, 4]
